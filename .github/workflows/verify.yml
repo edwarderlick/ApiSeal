@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONUTF8: "1"
+      GENVMROOT: "/tmp/genvmroot"
 
     steps:
       - name: Checkout repository
@@ -30,8 +31,10 @@ jobs:
         uses: actions/cache@v4
         id: genvm-cache
         with:
-          path: ~/.cache/genvm-linter
-          key: genvm-v0.6.0-rc9-runners
+          path: |
+            ~/.cache/genvm-linter
+            /tmp/genvmroot
+          key: genvm-v0.6.0-rc9-sdk-runners-v1
 
       - name: Install Python dependencies
         run: |
@@ -48,11 +51,13 @@ jobs:
           import urllib.request, tarfile, zipfile, io, os
           from pathlib import Path
 
+          genvmroot = Path('/tmp/genvmroot')
+          genvm_src = genvmroot / 'runners' / 'py-lib-genlayer-std' / 'src'
           cache_dir = Path.home() / '.cache' / 'genvm-linter' / 'extracted' / 'genlayerlabs-genvm-manager-v0.6.0-rc9'
-          py_genlayer_dir = cache_dir / 'py-genlayer' / 'babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0'
           py_lib_dir = cache_dir / 'py-lib-genlayer-std' / 'z7fv8bqpetj3wnjd8sn5s5xfqve3rz8nmtq4npwf2qdvns57zjgg'
+          py_genlayer_dir = cache_dir / 'py-genlayer' / 'babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0'
 
-          if not (py_genlayer_dir.exists() and py_lib_dir.exists()):
+          if not (genvm_src.exists() and py_lib_dir.exists()):
               print('Downloading GenVM v0.6.0-rc9 universal runner bundle...')
               url = 'https://github.com/genlayerlabs/genvm-manager/releases/download/v0.6.0-rc9/genvm-universal.tar.xz'
               req = urllib.request.Request(url, headers={'User-Agent': 'ApiSeal-CI'})
@@ -64,15 +69,22 @@ jobs:
                   m1 = outer_tar.getmember('runners/py-genlayer/ba/bwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0.zip')
                   f1 = outer_tar.extractfile(m1)
                   py_genlayer_dir.mkdir(parents=True, exist_ok=True)
-                  with zipfile.ZipFile(f1) as zf:
-                      zf.extractall(py_genlayer_dir)
-                  
-                  # Extract py-lib-genlayer-std runner zip
+                  with zipfile.ZipFile(f1) as zf1:
+                      zf1.extractall(py_genlayer_dir)
+
+                  # Extract py-lib-genlayer-std runner zip into both GENVMROOT and cache
                   m2 = outer_tar.getmember('runners/py-lib-genlayer-std/z7/fv8bqpetj3wnjd8sn5s5xfqve3rz8nmtq4npwf2qdvns57zjgg.zip')
                   f2 = outer_tar.extractfile(m2)
+                  raw_zip = f2.read()
+                  
+                  genvm_src.mkdir(parents=True, exist_ok=True)
+                  with zipfile.ZipFile(io.BytesIO(raw_zip)) as zf2:
+                      zf2.extractall(genvm_src)
+                  
                   py_lib_dir.mkdir(parents=True, exist_ok=True)
-                  with zipfile.ZipFile(f2) as zf2:
-                      zf2.extractall(py_lib_dir)
+                  with zipfile.ZipFile(io.BytesIO(raw_zip)) as zf3:
+                      zf3.extractall(py_lib_dir)
+
               print('GenVM v0.6.0-rc9 runners extracted successfully.')
           EOF
 
