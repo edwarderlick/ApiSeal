@@ -32,7 +32,7 @@ jobs:
         id: genvm-cache
         with:
           path: ~/.cache/genvm-linter
-          key: genvm-v0.6.0-rc9-sdk-runners-v3
+          key: genvm-v0.6.0-rc9-sdk-runners-v4
 
       - name: Install Python dependencies
         run: |
@@ -88,29 +88,13 @@ jobs:
                   with zipfile.ZipFile(io.BytesIO(raw_zip2)) as zf2:
                       zf2.extractall(py_lib_dir)
 
+              # Create get_schema compatibility shim for genvm-linter
+              py_shim = py_lib_dir / 'genlayer' / 'py'
+              py_shim.mkdir(parents=True, exist_ok=True)
+              (py_shim / '__init__.py').write_text('')
+              (py_shim / 'get_schema.py').write_text('from genlayer._internal.get_schema import *\n')
+
               print('GenVM v0.6.0-rc9 runners extracted successfully.')
-          EOF
-
-      - name: Debug runner cache and SDK import
-        run: |
-          python - << 'EOF'
-          import sys, traceback
-          from pathlib import Path
-
-          cache_dir = Path.home() / '.cache' / 'genvm-linter'
-          print("=== Cache contents ===")
-          files = [p for p in cache_dir.rglob('*') if p.is_file()]
-          print(f"Total files in cache: {len(files)}")
-          for p in files[:20]:
-              print(p.relative_to(cache_dir), p.stat().st_size)
-
-          from genvm_linter.validate.sdk_loader import load_sdk
-          try:
-              get_schema, notes = load_sdk(Path('contracts/apiseal.py'))
-              print("=== SDK LOADED SUCCESSFULLY ===", get_schema)
-          except Exception:
-              traceback.print_exc()
-              sys.exit(1)
           EOF
 
       - name: Lint and validate contract AST
