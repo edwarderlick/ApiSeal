@@ -219,6 +219,23 @@ Execution Summary: **44 passed in 0.32s** (100% pass offline)
 
 ---
 
+## Public CI Workflow Verification
+
+- **Workflow File**: `.github/workflows/verify.yml`
+- **Latest Green Main CI Run**: [run #39117994324](https://github.com/edwarderlick/ApiSeal/actions/runs/39117994324)
+- **Commit**: `f51e2d4`
+- **Verified Checks**:
+  1. GenVM v0.6.0-rc8 runner environment setup
+  2. AST linting and contract validation (`genvm-lint check contracts/apiseal.py`)
+  3. ABI schema extraction and byte-for-byte parity against tracked `deploy/schema.json`
+  4. 44 direct contract unit tests and autonomous signer tests (`pytest tests/direct -q`)
+  5. Default live integration suite skips cleanly without live opt-in (`pytest tests/integration/test_apiseal_live.py -q`)
+  6. TypeScript compilation (`npx tsc --noEmit`)
+  7. Fail-closed deployment guard verification on Linux
+  8. Live on-chain source parity verification against GenLayer Studio Devnet (`npm run verify:onchain`)
+
+---
+
 ## Final Verification Checklist
 
 - [x] **Zero gltest internal monkey patches**: All private `gltest` hooks removed; pure public `genlayer-js` APIs used for live execution.

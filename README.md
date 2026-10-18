@@ -19,6 +19,7 @@ Bounded semantic-version release certification for public APIs using GenLayer va
 | **Contract Source SHA-256** | `0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602` | Final Studio Devnet compatible source hash |
 | **Direct Test Count** | 44 passed (100% offline pass) | Covers all schema, boundary, adversarial paths, and signer resolution |
 | **Canonical Contract Address** | `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4` | Live on Studio Devnet Preview (Chain ID: `61997`) |
+| **Public CI Status** | Passing ([run #39117994324](https://github.com/edwarderlick/ApiSeal/actions/runs/39117994324), commit `f51e2d4`) | GenVM lint, schema parity, 44 unit tests, live on-chain parity verified |
 | **Deployment Status** | **DEPLOYED & ACTIVE** (tx: `0xd8880724...`) | Finalized under multi-validator consensus (MAJORITY_AGREE) |
 | **Live Integration Status** | **ALL 4 SCENARIOS PASSED** | Executed against Studio Devnet validators; zero monkey patches |
 | **On-Chain Verification** | **VERIFIED PASS** (Exact byte-for-byte match) | Byte-for-byte parity proven via `gen_getContractCode` (37,710 bytes) |
