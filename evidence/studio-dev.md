@@ -132,6 +132,10 @@ Detailed machine-readable receipt saved in: [`evidence/live_scenarios_receipt.js
 
 Following the successful execution of the Canary and all 4 Live Integration Scenarios, the final canonical contract was deployed to Studio Devnet:
 
+[View ApiSeal on the GenLayer Studio Devnet Explorer](https://explorer-studio-dev.genlayer.com/contract/0xA631C30A79e69695a8d17D21F4F2497Ff52522A4)
+
+[View the canonical deployment transaction](https://explorer-studio-dev.genlayer.com/tx/0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542)
+
 | Property | Value |
 | :--- | :--- |
 | **Canonical Contract Address** | `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4` |
@@ -147,6 +151,18 @@ Following the successful execution of the Canary and all 4 Live Integration Scen
 | **Explorer Transaction Link** | [0xd888072437a572b8...](https://explorer-studio-dev.genlayer.com/tx/0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542) |
 
 ### Initialized State Readback Verification
+
+The canonical contract was deployed in its clean initial state awaiting baseline registration:
+- **Status**: `UNINITIALIZED`
+- **Current Version**: `0.0.0`
+- **Canonical Manifest**: `""` (empty)
+- **Pending Proposal**: empty
+- **History Count**: `0` (bounded to `MAX_HISTORY_ENTRIES = 10` via FIFO eviction)
+- **Owner**: `0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD`
+- **Project ID**: `org.genlayer.apiseal`
+- **Review Window**: `86400` seconds
+
+*(Note: version `1.0.0` existed strictly inside disposable live-scenario contracts where `register_baseline` was executed to test candidate proposals. The production canonical contract is clean and uninitialized.)*
 
 The following safe view methods were executed against the canonical contract address to confirm clean initialization:
 
@@ -203,7 +219,7 @@ Test Command:
 pytest tests/direct -v
 ```
 
-Execution Summary: **44 passed in 0.32s** (100% pass offline)
+Execution Summary: **44 passed in 0.32s** (100% pass offline: 38 contract tests in `tests/direct/test_apiseal.py` + 6 signer-resolver tests in `tests/direct/test_signer_resolver.py`)
 
 - Covers exact manifest parsing, AST inspection, boundary checking, SemVer rules, malicious inputs, fail-closed handling, history recomputation, and signer resolution.
 
@@ -222,13 +238,13 @@ Execution Summary: **44 passed in 0.32s** (100% pass offline)
 ## Public CI Workflow Verification
 
 - **Workflow File**: `.github/workflows/verify.yml`
-- **Latest Green Main CI Run**: [run #39117994324](https://github.com/edwarderlick/ApiSeal/actions/runs/39117994324)
-- **Commit**: `f51e2d4`
+- **Code-bearing / Evidence CI Run**: [run #39117994324](https://github.com/edwarderlick/ApiSeal/actions/runs/39117994324) (Commit: `f51e2d4`)
+- **Documentation-only Verification CI Run**: [run #39118170401](https://github.com/edwarderlick/ApiSeal/actions/runs/39118170401) (Commit: `0397681cd772f508a96b648ea59740b7fec4a77b`)
 - **Verified Checks**:
   1. GenVM v0.6.0-rc8 runner environment setup
   2. AST linting and contract validation (`genvm-lint check contracts/apiseal.py`)
   3. ABI schema extraction and byte-for-byte parity against tracked `deploy/schema.json`
-  4. 44 direct contract unit tests and autonomous signer tests (`pytest tests/direct -q`)
+  4. 44 direct tests: 38 contract unit tests in `tests/direct/test_apiseal.py` + 6 autonomous signer tests in `tests/direct/test_signer_resolver.py` (`pytest tests/direct -q`)
   5. Default live integration suite skips cleanly without live opt-in (`pytest tests/integration/test_apiseal_live.py -q`)
   6. TypeScript compilation (`npx tsc --noEmit`)
   7. Fail-closed deployment guard verification on Linux

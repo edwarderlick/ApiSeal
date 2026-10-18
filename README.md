@@ -1,12 +1,16 @@
 # ApiSeal
 
-[![Verify](https://github.com/edwarderlick/ApiSeal/actions/workflows/verify.yml/badge.svg)](https://github.com/edwarderlick/ApiSeal/actions/workflows/verify.yml)
+[![Verify](https://github.com/edwarderlick/ApiSeal/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/edwarderlick/ApiSeal/actions/workflows/verify.yml?query=branch%3Amain)
 
 Bounded semantic-version release certification for public APIs using GenLayer validator consensus.
 
 ---
 
 ## Status Panel
+
+[View ApiSeal on the GenLayer Studio Devnet Explorer](https://explorer-studio-dev.genlayer.com/contract/0xA631C30A79e69695a8d17D21F4F2497Ff52522A4)
+
+[View the canonical deployment transaction](https://explorer-studio-dev.genlayer.com/tx/0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542)
 
 | Property | Value | Notes |
 | :--- | :--- | :--- |
@@ -17,13 +21,16 @@ Bounded semantic-version release certification for public APIs using GenLayer va
 | **Explorer** | `https://explorer-studio-dev.genlayer.com` | Block and transaction explorer |
 | **Contract Source Path** | `contracts/apiseal.py` | Standalone Python Intelligent Contract |
 | **Contract Source SHA-256** | `0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602` | Final Studio Devnet compatible source hash |
-| **Direct Test Count** | 44 passed (100% offline pass) | Covers all schema, boundary, adversarial paths, and signer resolution |
-| **Canonical Contract Address** | `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4` | Live on Studio Devnet Preview (Chain ID: `61997`) |
-| **Public CI Status** | Passing ([run #39117994324](https://github.com/edwarderlick/ApiSeal/actions/runs/39117994324), commit `f51e2d4`) | GenVM lint, schema parity, 44 unit tests, live on-chain parity verified |
+| **Direct Test Count** | 44 passed (38 contract tests + 6 signer tests; 100% offline pass) | Direct unit tests across schema, boundaries, adversarial paths, and signer resolution |
+| **Canonical Contract Address** | `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4` | Live on Studio Devnet Preview (Chain ID: `61997`); clean `UNINITIALIZED` state at version `0.0.0` |
+| **Public CI Status** | Passing ([branch workflow: main](https://github.com/edwarderlick/ApiSeal/actions/workflows/verify.yml?query=branch%3Amain)) | Code-bearing run [#39117994324](https://github.com/edwarderlick/ApiSeal/actions/runs/39117994324) (`f51e2d4`), docs run [#39118170401](https://github.com/edwarderlick/ApiSeal/actions/runs/39118170401) (`0397681`) |
 | **Deployment Status** | **DEPLOYED & ACTIVE** (tx: `0xd8880724...`) | Finalized under multi-validator consensus (MAJORITY_AGREE) |
 | **Live Integration Status** | **ALL 4 SCENARIOS PASSED** | Executed against Studio Devnet validators; zero monkey patches |
 | **On-Chain Verification** | **VERIFIED PASS** (Exact byte-for-byte match) | Byte-for-byte parity proven via `gen_getContractCode` (37,710 bytes) |
 | **GenLayer Portal Status** | NOT SUBMITTED | Repository published & verified; portal submission pending final user review |
+
+- [View ApiSeal on the GenLayer Studio Devnet Explorer](https://explorer-studio-dev.genlayer.com/contract/0xA631C30A79e69695a8d17D21F4F2497Ff52522A4)
+- [View the canonical deployment transaction](https://explorer-studio-dev.genlayer.com/tx/0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542)
 
 ---
 
@@ -349,7 +356,7 @@ All offline and CI verification checks pass deterministically:
    Passed in local environment and in public CI. In CI, schema is extracted to a temporary file and asserted byte-for-byte identical to `deploy/schema.json` (SHA-256: `30af51d95e9613ac8595eacda8375b3af87416b95bfc7bdc65cd0717e7884378`).
 
 3. **Direct Test Suite Summary (`pytest tests/direct`)**:
-   - **44 passed in ~0.32s** (100% pass locally and in public CI).
+   - **44 passed in ~0.32s** (38 contract tests in `tests/direct/test_apiseal.py` + 6 signer-resolver tests in `tests/direct/test_signer_resolver.py`; 100% pass locally and in public CI).
    - Covers: exact manifest schema, unknown-key rejection, malformed JSON, nested/duplicate IDs, string/count boundaries, boolean-as-integer rejection, URL/hash validation, authorization, concurrency, cancellation, permissionless expiry, deadline enforcement, hash mismatch fail-closed, structural breaking detection, semantic breaking detection, additive surface detection, compatible patch acceptance, ambiguous rejection, prompt injection resistance, atomic replacement, replay prevention, history cap (10 items), deterministic history recomputation, and autonomous signer resolution.
 
 4. **TypeScript Typecheck (`npx tsc --noEmit`)**:
@@ -412,12 +419,12 @@ To maintain complete transparency and audit integrity, all network interactions 
      - Contract: `0x834cd190D05deEA20816190A4212B41519CD0351` (deploy tx: `0x8b28744cf2e83e8e03a136b60d6c64b61af2dbde74e5892daba86dcdf06519d4`)
      - Propose tx: `0x453c3708420d07144e5344b6d9ea2336e0f88b4bc33deeea930b27814a18386c`
      - Review tx: `0xd8ee84c588001e3ae12acd918fa5e81cbd7eb5cb568340e4c30ad9d7f5cce23f` (`FINISHED_WITH_ERROR`)
-     - Result: **PASSED** (Failed closed with revert as required; proposal remained in PENDING state).
+     - Result: **PASSED** (Failed closed with revert as required by consensus; proposal remained in PENDING state; execution correctly produced FINISHED_WITH_ERROR).
    - **Scenario 4 (Repeated review prevented/reverted)**:
      - Contract: `0xAcD0a05625E48566A163451dc19e318515b64B1E` (deploy tx: `0x6df54a56c6a60ddcf3278452604bb5455a416a948c06a5e56698db62d0d11eb5`)
      - First review tx: `0x7de71718ab125d4dc89ba163ea738fc973504110492b064a04eae793f2f9e973` (`FINISHED_WITH_RETURN`, status -> READY)
      - Repeat review tx: `0xd99662988b1573f1a21ef2456e50f34854e057d360ea75e9ca3c332414a541c4` (`FINISHED_WITH_ERROR`)
-     - Result: **PASSED** (Repeat review reverted; state preserved READY).
+     - Result: **PASSED** (Repeat review reverted under consensus as required; status preserved in READY; execution correctly produced FINISHED_WITH_ERROR on the repeat attempt).
 
 Detailed receipts: [`evidence/live_scenarios_receipt.json`](evidence/live_scenarios_receipt.json).
 
@@ -427,15 +434,34 @@ Detailed receipts: [`evidence/live_scenarios_receipt.json`](evidence/live_scenar
 
 *Following the Mandatory Safety Gate, the final canonical ApiSeal contract was deployed and verified.*
 
+[View ApiSeal on the GenLayer Studio Devnet Explorer](https://explorer-studio-dev.genlayer.com/contract/0xA631C30A79e69695a8d17D21F4F2497Ff52522A4)
+
+[View the canonical deployment transaction](https://explorer-studio-dev.genlayer.com/tx/0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542)
+
 ### Canonical Deployment Record
-- **Contract Address**: `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4`
-- **Deployment Transaction Hash**: `0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542`
+- **Contract Address**: [`0xA631C30A79e69695a8d17D21F4F2497Ff52522A4`](https://explorer-studio-dev.genlayer.com/contract/0xA631C30A79e69695a8d17D21F4F2497Ff52522A4)
+- **Deployment Transaction Hash**: [`0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542`](https://explorer-studio-dev.genlayer.com/tx/0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542)
 - **Deployer**: `0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD` (`coverlock-submitter`)
 - **Network**: GenLayer Studio Devnet Preview (Chain ID: `61997`)
 - **Consensus Status**: `FINALIZED` (Status 7, `MAJORITY_AGREE`)
 - **GenVM Execution Result**: `FINISHED_WITH_RETURN`
 - **Explorer Contract**: [0xA631C30A79e69695a8d17D21F4F2497Ff52522A4](https://explorer-studio-dev.genlayer.com/contract/0xA631C30A79e69695a8d17D21F4F2497Ff52522A4)
 - **Explorer Transaction**: [0xd888072437a572b8...](https://explorer-studio-dev.genlayer.com/tx/0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542)
+
+### Canonical Contract State (Clean UNINITIALIZED)
+The canonical contract is intentionally deployed in its clean initial state awaiting the owner's baseline registration:
+- **Contract Status**: `UNINITIALIZED`
+- **Current Version**: `0.0.0` (`major: 0, minor: 0, patch: 0`)
+- **Canonical Manifest**: `""` (empty)
+- **Canonical Manifest SHA-256**: `""` (empty)
+- **Pending Proposal**: empty (nonce: 0, candidate URL: `""`, proposed version: `0.0.0`)
+- **History Count**: `0` (capacity: 10 entries via FIFO eviction)
+- **Owner Address**: `0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD`
+- **Project ID**: `org.genlayer.apiseal`
+- **Review Window**: `86400` seconds (24 hours)
+
+> [!NOTE]
+> Baseline version `1.0.0` existed strictly inside the disposable live-scenario contracts (e.g. `0x073df726542937D4494EF7c86dD2ab373ac96B49`) where `register_baseline` was executed to test candidate proposals. The production canonical contract at `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4` is clean and uninitialized.
 
 ### On-Chain Source Verification Proof
 The verification script [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts):

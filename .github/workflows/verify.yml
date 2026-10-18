@@ -138,7 +138,25 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Verify guarded deployment fails safely without private key on Linux CI
-        run: npm run deploy:studio-dev && exit 1 || echo "deployScript failed safely without private key"
+        run: |
+          set +e
+          unset GENLAYER_PRIVATE_KEY
+          unset PRIVATE_KEY
+          npm run deploy:studio-dev > /tmp/apiseal-deploy-guard.log 2>&1
+          deploy_status=$?
+          set -e
+
+          if [ "$deploy_status" -eq 0 ]; then
+            echo "::error::Deployment unexpectedly succeeded without an authorized signer"
+            exit 1
+          fi
+
+          if ! grep -Fq "could not be resolved from OS keychain" /tmp/apiseal-deploy-guard.log; then
+            echo "::error::Deployment failed for an unexpected reason"
+            exit 1
+          fi
+
+          echo "Deployment correctly failed closed because no signer was available"
 
       - name: Verify on-chain deployed source parity against GenLayer Studio Devnet
         run: npm run verify:onchain
