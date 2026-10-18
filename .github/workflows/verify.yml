@@ -137,7 +137,8 @@ jobs:
       - name: Typecheck TypeScript scripts
         run: npx tsc --noEmit
 
-      - name: Verify guarded deployment and verification scripts fail safely on Linux CI
-        run: |
-          npm run deploy:studio-dev && exit 1 || echo "deployScript failed safely without private key"
-          npm run verify:onchain && exit 1 || echo "verify_onchain failed safely without address"
+      - name: Verify guarded deployment fails safely without private key on Linux CI
+        run: npm run deploy:studio-dev && exit 1 || echo "deployScript failed safely without private key"
+
+      - name: Verify on-chain deployed source parity against GenLayer Studio Devnet
+        run: npm run verify:onchain
