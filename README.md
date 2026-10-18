@@ -18,7 +18,7 @@ Bounded semantic-version release certification for public APIs using GenLayer va
 | **Contract Source Path** | `contracts/apiseal.py` | Standalone Python Intelligent Contract |
 | **Contract Source SHA-256** | `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587` | Immutable source code fingerprint |
 | **Direct Test Count** | 38 passed (100% offline pass) | Covers all schema, boundary, and adversarial paths |
-| **Public CI Status** | Passing ([run #39100089946](https://github.com/edwarderlick/ApiSeal/actions/runs/39100089946), commit `1b03a24`) | GenVM lint, schema parity, 38 unit tests, live-guard skip, TypeScript clean |
+| **Public CI Status** | Passing ([run #39100985057](https://github.com/edwarderlick/ApiSeal/actions/runs/39100985057), commit `57072c75`) | GenVM lint, schema parity, 38 unit tests, live-guard skip, TypeScript clean |
 | **Deployment Status** | Pre-deployment source published | Awaiting private key environment for live network transaction |
 | **Live Integration Status** | Guarded (4 skipped by default) | Requires explicit opt-in `APISEAL_RUN_LIVE_TESTS=1` |
 | **On-Chain Verification** | NOT RUN — verification script prepared; requires successful deployment and on-chain code readback. | Script `deploy/verify_onchain.ts` ready for post-deployment execution |

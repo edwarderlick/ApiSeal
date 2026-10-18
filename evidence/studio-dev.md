@@ -245,7 +245,7 @@ When `APISEAL_RUN_LIVE_TESTS=1` is set, tests require commit-pinned public URLs 
 - [x] ABI schema validation and byte-for-byte parity passed locally and in CI (`genvm-lint schema`).
 - [x] TypeScript compilation passed locally and in CI (`npx tsc --noEmit`).
 - [x] Integration test suite skipped safely without live opt-in (`pytest tests/integration/test_apiseal_live.py`).
-- [x] Public GitHub Actions CI workflow passed ([run #39100089946](https://github.com/edwarderlick/ApiSeal/actions/runs/39100089946), commit `1b03a248f89ecf8e01d1548dc07e0b0799ec0e8d`).
+- [x] Public GitHub Actions CI workflow passed ([run #39100985057](https://github.com/edwarderlick/ApiSeal/actions/runs/39100985057), commit `57072c75d2bce74e9f7aa00f19f3a23fca264540`).
 - [x] Guarded fail-closed script execution verified on Windows (locally) and Ubuntu Linux (CI).
 - [x] Real fee estimation and authoritative `txDataDecoded` address extraction implemented.
 - [x] Canonical source SHA-256 computed: `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`.
