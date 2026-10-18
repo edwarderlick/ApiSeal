@@ -238,6 +238,7 @@ When `APISEAL_RUN_LIVE_TESTS=1` is set, tests require commit-pinned public URLs 
 - [x] ABI schema validation passed (`genvm-lint schema -o deploy/schema.json --json contracts/apiseal.py`).
 - [x] TypeScript compilation passed (`npx tsc --noEmit`).
 - [x] Integration test collection verified (`pytest tests/integration/test_apiseal_live.py --collect-only`).
+- [x] Public GitHub Actions CI workflow passed (`https://github.com/edwarderlick/ApiSeal/actions/runs/39099738332`).
 - [x] Cross-platform script execution verified for Windows & Unix.
 - [x] Real fee estimation and authoritative `txDataDecoded` address extraction implemented.
 - [x] Canonical source SHA-256 computed: `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`.

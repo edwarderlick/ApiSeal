@@ -1,5 +1,7 @@
 # ApiSeal
 
+[![Verify](https://github.com/edwarderlick/ApiSeal/actions/workflows/verify.yml/badge.svg)](https://github.com/edwarderlick/ApiSeal/actions/workflows/verify.yml)
+
 Bounded semantic-version release certification for public APIs using GenLayer validator consensus.
 
 ---
@@ -16,6 +18,7 @@ Bounded semantic-version release certification for public APIs using GenLayer va
 | **Contract Source Path** | `contracts/apiseal.py` | Standalone Python Intelligent Contract |
 | **Contract Source SHA-256** | `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587` | Immutable source code fingerprint |
 | **Direct Test Count** | 38 passed (100% offline pass) | Covers all schema, boundary, and adversarial paths |
+| **Public CI Status** | Passing (1m11s, run #39099738332) | GenVM lint, 38 unit tests, live-guard skip, TypeScript clean |
 | **Deployment Status** | Pre-deployment source published | Awaiting private key environment for live network transaction |
 | **Live Integration Status** | Guarded (4 skipped by default) | Requires explicit opt-in `APISEAL_RUN_LIVE_TESTS=1` |
 | **On-Chain Verification** | Verified offline via `tsx` script | Byte-for-byte readback verification prepared |
