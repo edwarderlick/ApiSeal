@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONUTF8: "1"
-      GENVM_VERSION: "genlayerlabs-genvm-manager-v0.6.0-rc9"
+      GENVM_VERSION: "genlayerlabs-genvm-manager-v0.6.0-rc8"
 
     steps:
       - name: Checkout repository
@@ -32,7 +32,7 @@ jobs:
         id: genvm-cache
         with:
           path: ~/.cache/genvm-linter
-          key: genvm-v0.6.0-rc9-sdk-runners-v6
+          key: genvm-v0.6.0-rc8-sdk-runners-v1
 
       - name: Install Python dependencies
         run: |
@@ -42,51 +42,60 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Setup GenVM v0.6.0-rc9 SDK runners
+      - name: Setup GenVM v0.6.0-rc8 SDK runners
         if: steps.genvm-cache.outputs.cache-hit != 'true'
         run: |
           python - << 'EOF'
-          import urllib.request, tarfile, zipfile, io
+          import urllib.request, tarfile, zipfile, io, shutil
           from pathlib import Path
 
           cache_dir = Path.home() / '.cache' / 'genvm-linter'
           cache_dir.mkdir(parents=True, exist_ok=True)
           
-          # Create placeholder tarball and index so genvm-lint uses extracted runners
-          tarball_name = 'genvm-universal-genlayerlabs-genvm-manager-v0.6.0-rc9.tar.xz'
+          tarball_name = 'genvm-universal-genlayerlabs-genvm-manager-v0.6.0-rc8.tar.xz'
           tarball_path = cache_dir / tarball_name
           if not tarball_path.exists():
               tarball_path.touch()
           (cache_dir / f"{tarball_name}.index.json").write_text('{}')
 
-          # Extracted runner paths (genvm-lint appends .tar to version stem)
-          ext_base = cache_dir / 'extracted' / 'genlayerlabs-genvm-manager-v0.6.0-rc9.tar'
-          py_lib_dir = ext_base / 'py-lib-genlayer-std' / 'z7fv8bqpetj3wnjd8sn5s5xfqve3rz8nmtq4npwf2qdvns57zjgg'
-          py_genlayer_dir = ext_base / 'py-genlayer' / 'babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0'
+          ext_base = cache_dir / 'extracted' / 'genlayerlabs-genvm-manager-v0.6.0-rc8.tar'
+          ext_base_alt = cache_dir / 'extracted' / 'genlayerlabs-genvm-manager-v0.6.0-rc8'
+          py_lib_dir = ext_base / 'py-lib-genlayer-std' / 'kzr02ndm9et4qkmbqpq5djjt5sme2yt76n7sz1qbzax0knt6mam0'
+          py_genlayer_dir = ext_base / 'py-genlayer' / '5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng'
 
           if not (py_lib_dir.exists() and py_genlayer_dir.exists()):
-              print('Downloading GenVM v0.6.0-rc9 universal runner bundle...')
-              url = 'https://github.com/genlayerlabs/genvm-manager/releases/download/v0.6.0-rc9/genvm-universal.tar.xz'
+              print('Downloading GenVM v0.6.0-rc8 universal runner bundle...')
+              url = 'https://github.com/genlayerlabs/genvm-manager/releases/download/v0.6.0-rc8/genvm-universal.tar.xz'
               req = urllib.request.Request(url, headers={'User-Agent': 'ApiSeal-CI'})
               with urllib.request.urlopen(req) as resp:
                   tarball_data = resp.read()
               print(f'Downloaded {len(tarball_data)} bytes. Extracting required runners...')
               with tarfile.open(fileobj=io.BytesIO(tarball_data), mode='r:xz') as outer_tar:
-                  # Extract py-genlayer runner zip
-                  m1 = outer_tar.getmember('runners/py-genlayer/ba/bwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0.zip')
-                  f1 = outer_tar.extractfile(m1)
-                  raw_zip1 = f1.read()
+                  # Extract py-genlayer runner
                   py_genlayer_dir.mkdir(parents=True, exist_ok=True)
-                  with zipfile.ZipFile(io.BytesIO(raw_zip1)) as zf1:
-                      zf1.extractall(py_genlayer_dir)
+                  try:
+                      m1 = outer_tar.getmember('runners/py-genlayer/5j/ycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng.tar')
+                      f1 = outer_tar.extractfile(m1)
+                      with tarfile.open(fileobj=f1, mode='r:') as tf1:
+                          tf1.extractall(py_genlayer_dir)
+                  except KeyError:
+                      m1 = outer_tar.getmember('runners/py-genlayer/5j/ycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng.zip')
+                      raw1 = outer_tar.extractfile(m1).read()
+                      with zipfile.ZipFile(io.BytesIO(raw1)) as zf1:
+                          zf1.extractall(py_genlayer_dir)
 
-                  # Extract py-lib-genlayer-std runner zip
-                  m2 = outer_tar.getmember('runners/py-lib-genlayer-std/z7/fv8bqpetj3wnjd8sn5s5xfqve3rz8nmtq4npwf2qdvns57zjgg.zip')
-                  f2 = outer_tar.extractfile(m2)
-                  raw_zip2 = f2.read()
+                  # Extract py-lib-genlayer-std
                   py_lib_dir.mkdir(parents=True, exist_ok=True)
-                  with zipfile.ZipFile(io.BytesIO(raw_zip2)) as zf2:
-                      zf2.extractall(py_lib_dir)
+                  try:
+                      m2 = outer_tar.getmember('runners/py-lib-genlayer-std/kz/r02ndm9et4qkmbqpq5djjt5sme2yt76n7sz1qbzax0knt6mam0.tar')
+                      f2 = outer_tar.extractfile(m2)
+                      with tarfile.open(fileobj=f2, mode='r:') as tf2:
+                          tf2.extractall(py_lib_dir)
+                  except KeyError:
+                      m2 = outer_tar.getmember('runners/py-lib-genlayer-std/kz/r02ndm9et4qkmbqpq5djjt5sme2yt76n7sz1qbzax0knt6mam0.zip')
+                      raw2 = outer_tar.extractfile(m2).read()
+                      with zipfile.ZipFile(io.BytesIO(raw2)) as zf2:
+                          zf2.extractall(py_lib_dir)
 
               # Create get_schema compatibility shim for genvm-linter
               py_shim = py_lib_dir / 'genlayer' / 'py'
@@ -94,16 +103,14 @@ jobs:
               (py_shim / '__init__.py').write_text('')
               (py_shim / 'get_schema.py').write_text('from genlayer._internal.get_schema import *\n')
 
-              # Ensure top-level re-exports for contract validation
-              init_file = py_lib_dir / 'genlayer' / '__init__.py'
-              init_content = init_file.read_text()
-              if 'from .contract import Contract' not in init_content:
-                  init_file.write_text(init_content + '\nfrom .storage import allow as allow_storage, TreeMap, DynArray\nfrom .contract import Contract\n')
+              # Duplicate to alternate directory without .tar extension
+              if not ext_base_alt.exists():
+                  shutil.copytree(ext_base, ext_base_alt)
 
               import subprocess
               subprocess.run(['chmod', '-R', '755', str(cache_dir)], check=False)
 
-              print('GenVM v0.6.0-rc9 runners extracted successfully.')
+              print('GenVM v0.6.0-rc8 runners extracted successfully.')
           EOF
 
       - name: Lint and validate contract AST

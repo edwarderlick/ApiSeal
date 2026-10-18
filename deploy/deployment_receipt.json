@@ -1,0 +1,12 @@
+{
+  "network": "GenLayer Studio Devnet",
+  "chainId": 61997,
+  "rpcUrl": "https://studio-dev.genlayer.com/api",
+  "contractName": "ApiSeal",
+  "contractAddress": "0xA631C30A79e69695a8d17D21F4F2497Ff52522A4",
+  "sourceSha256": "0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602",
+  "deployerAddress": "0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD",
+  "transactionHash": "0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542",
+  "status": "FINALIZED",
+  "deployedAt": "2026-10-18T09:40:19.345Z"
+}

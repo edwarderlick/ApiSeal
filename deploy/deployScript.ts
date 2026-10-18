@@ -63,6 +63,7 @@ async function main(): Promise<void> {
 
   // Create GenLayer client targeting studioDevnet (61997)
   const client = createClient({
+    endpoint: "https://studio-dev.genlayer.com/api",
     chain: studioDevnet,
     account,
   });

@@ -16,12 +16,13 @@ Bounded semantic-version release certification for public APIs using GenLayer va
 | **Canonical RPC** | `https://studio-dev.genlayer.com/api` | Studio Devnet JSON-RPC endpoint |
 | **Explorer** | `https://explorer-studio-dev.genlayer.com` | Block and transaction explorer |
 | **Contract Source Path** | `contracts/apiseal.py` | Standalone Python Intelligent Contract |
-| **Contract Source SHA-256** | `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587` | Immutable source code fingerprint |
-| **Direct Test Count** | 38 passed (100% offline pass) | Covers all schema, boundary, and adversarial paths |
-| **Public CI Status** | Passing ([run #39100985057](https://github.com/edwarderlick/ApiSeal/actions/runs/39100985057), commit `57072c75`) | GenVM lint, schema parity, 38 unit tests, live-guard skip, TypeScript clean |
-| **Deployment Status** | Pre-deployment source published | Awaiting private key environment for live network transaction |
-| **Live Integration Status** | Guarded (4 skipped by default) | Requires explicit opt-in `APISEAL_RUN_LIVE_TESTS=1` |
-| **On-Chain Verification** | NOT RUN — verification script prepared; requires successful deployment and on-chain code readback. | Script `deploy/verify_onchain.ts` ready for post-deployment execution |
+| **Contract Source SHA-256** | `0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602` | Final Studio Devnet compatible source hash |
+| **Direct Test Count** | 44 passed (100% offline pass) | Covers all schema, boundary, adversarial paths, and signer resolution |
+| **Canonical Contract Address** | `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4` | Live on Studio Devnet Preview (Chain ID: `61997`) |
+| **Deployment Status** | **DEPLOYED & ACTIVE** (tx: `0xd8880724...`) | Finalized under multi-validator consensus (MAJORITY_AGREE) |
+| **Live Integration Status** | **ALL 4 SCENARIOS PASSED** | Executed against Studio Devnet validators; zero monkey patches |
+| **On-Chain Verification** | **VERIFIED PASS** (Exact byte-for-byte match) | Byte-for-byte parity proven via `gen_getContractCode` (37,710 bytes) |
+| **GenLayer Portal Status** | NOT SUBMITTED | Repository published & verified; portal submission pending final user review |
 
 ---
 
@@ -237,10 +238,16 @@ ApiSeal/
 ├── contracts/
 │   └── apiseal.py                  # Standalone GenLayer Intelligent Contract
 ├── deploy/
+│   ├── deployment_receipt.json     # Final canonical deployment receipt
 │   ├── deployScript.ts             # TypeScript deployment script (fail-closed fee estimation)
+│   ├── run_canary.ts               # Phase 5 disposable canary test script
+│   ├── run_live_integration.ts     # Phase 6 live 4-scenario integration harness
 │   ├── schema.json                 # ABI schema generated via genvm-lint
+│   ├── signer.ts                   # Autonomous OS-keychain signer resolver
+│   ├── smoke_read.ts               # Post-deployment view-methods smoke verification
 │   └── verify_onchain.ts           # On-chain byte-for-byte readback verification
 ├── evidence/
+│   ├── live_scenarios_receipt.json # Detailed machine-readable live scenarios receipts
 │   └── studio-dev.md               # Studio Devnet specifications & verification evidence
 ├── fixtures/
 │   ├── v1.0.1-compatible.json      # Canonical compact compatible fixture (live tests 01, 04)
@@ -248,9 +255,10 @@ ApiSeal/
 │   └── v2.0.0-breaking.json        # Canonical compact breaking reference fixture (offline example)
 ├── tests/
 │   ├── direct/
-│   │   └── test_apiseal.py         # 38 direct unit tests (AST, schema, bounds, recomputation)
+│   │   ├── test_apiseal.py         # 38 contract unit tests (AST, schema, bounds, recomputation)
+│   │   └── test_signer_resolver.py # 6 signer resolver direct unit tests
 │   └── integration/
-│       └── test_apiseal_live.py    # 4 end-to-end integration tests (opt-in guarded)
+│       └── test_apiseal_live.py    # Safe offline pytest suite (guarded skip)
 ├── .gitignore                      # Comprehensive exclusions (keys, logs, caches, artifacts)
 ├── gltest.config.yaml              # gltest runner configuration targeting studio_devnet
 ├── LICENSE                         # Apache 2.0 open-source license
@@ -298,8 +306,8 @@ ApiSeal/
 
 4. **Run Direct Contract Unit Tests**:
    ```bash
-   pytest tests/direct/test_apiseal.py -q
-   # Result: 38 passed in local and public CI
+   pytest tests/direct -q
+   # Result: 44 passed in local and public CI
    ```
 
 5. **Run Integration Test Suite Without Live Opt-In**:
@@ -337,11 +345,11 @@ All offline and CI verification checks pass deterministically:
    ```
 
 2. **ABI Schema Parity**:
-   Passed in local environment and in public CI. In CI, schema is extracted to a temporary file and asserted byte-for-byte identical to `deploy/schema.json`.
+   Passed in local environment and in public CI. In CI, schema is extracted to a temporary file and asserted byte-for-byte identical to `deploy/schema.json` (SHA-256: `30af51d95e9613ac8595eacda8375b3af87416b95bfc7bdc65cd0717e7884378`).
 
-3. **Direct Test Suite Summary (`pytest tests/direct/test_apiseal.py`)**:
-   - **38 passed in ~0.24s** (100% pass locally and in public CI).
-   - Covers: exact manifest schema, unknown-key rejection, malformed JSON, nested/duplicate IDs, string/count boundaries, boolean-as-integer rejection, URL/hash validation, authorization, concurrency, cancellation, permissionless expiry, deadline enforcement, hash mismatch fail-closed, structural breaking detection, semantic breaking detection, additive surface detection, compatible patch acceptance, ambiguous rejection, prompt injection resistance, atomic replacement, replay prevention, history cap (10 items), and history recomputation.
+3. **Direct Test Suite Summary (`pytest tests/direct`)**:
+   - **44 passed in ~0.32s** (100% pass locally and in public CI).
+   - Covers: exact manifest schema, unknown-key rejection, malformed JSON, nested/duplicate IDs, string/count boundaries, boolean-as-integer rejection, URL/hash validation, authorization, concurrency, cancellation, permissionless expiry, deadline enforcement, hash mismatch fail-closed, structural breaking detection, semantic breaking detection, additive surface detection, compatible patch acceptance, ambiguous rejection, prompt injection resistance, atomic replacement, replay prevention, history cap (10 items), deterministic history recomputation, and autonomous signer resolution.
 
 4. **TypeScript Typecheck (`npx tsc --noEmit`)**:
    Clean exit code 0 locally and in public CI.
@@ -353,70 +361,86 @@ All offline and CI verification checks pass deterministically:
    Guarded fail-closed script behavior verified on Windows (locally) and on Ubuntu Linux (public CI).
 
 7. **Cryptographic Checksums**:
-   - `contracts/apiseal.py`: `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`
+   - `contracts/apiseal.py`: `0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602`
+   - `deploy/schema.json`: `30af51d95e9613ac8595eacda8375b3af87416b95bfc7bdc65cd0717e7884378`
    - `fixtures/v1.0.1-compatible.json`: `5d1c3fe497e44fc95a704e7ae49fb0c99a4af0b6b99fa12afdef0a959681701c`
    - `fixtures/v1.0.1-additive.json`: `1c7d2fe54ae97fea4d82cbb112a243f8e16e10a2ff84430bfbdce3c75ecde888`
    - `fixtures/v2.0.0-breaking.json`: `5741ab9a04bfe5f418d7590d2c9825e2d8ddc89a6438c0927c3d32d7496a5073`
 
 ---
 
-## Live Integration Specification
+## Live Integration Specification & Verified Real Executions
 
-The live integration test suite is located in [`tests/integration/test_apiseal_live.py`](tests/integration/test_apiseal_live.py).
+The live integration suite tests ApiSeal against active validator consensus on the GenLayer Studio Devnet Preview.
 
-> [!NOTE]
-> **Live Integration Status: IMPLEMENTED / PENDING (NOT RUN BY DEFAULT)**
-> Without explicit configuration and credentials, all 4 tests unconditionally skip before deploying a contract or submitting any transactions.
+### Separation of Deployments & Execution History
 
-### Live Test Requirements
-To execute live tests against the GenLayer Studio Devnet Preview:
-1. Provide the mandatory opt-in variable:
-   ```bash
-   export APISEAL_RUN_LIVE_TESTS=1
-   ```
-2. Provide immutable, commit-pinned public URLs serving exact fixture bytes:
-   ```bash
-   export APISEAL_LIVE_COMPATIBLE_FIXTURE_URL=https://raw.githubusercontent.com/edwarderlick/ApiSeal/<COMMIT_SHA>/fixtures/v1.0.1-compatible.json
-   export APISEAL_LIVE_ADDITIVE_FIXTURE_URL=https://raw.githubusercontent.com/edwarderlick/ApiSeal/<COMMIT_SHA>/fixtures/v1.0.1-additive.json
-   ```
-3. Run the live test suite:
-   ```bash
-   pytest tests/integration/test_apiseal_live.py -v
-   ```
+To maintain complete transparency and audit integrity, all network interactions are separated into distinct categories:
 
-### Scenarios Tested
-- `test_integration_01_accepted_compatible_release` (implemented/pending): Owner registers baseline v1.0.0, proposes compatible v1.0.1. Validators verify hash, classify surfaces as `COMPATIBLE`, and contract promotes release.
-- `test_integration_02_rejected_insufficient_version` (implemented/pending): Owner registers baseline v1.0.0, proposes additive candidate (`refund_charge`) with only patch bump v1.0.1. Contract deterministically requires at least minor bump and rejects proposal.
-- `test_integration_03_hash_mismatch_or_fetch_failure` (implemented/pending): Candidate URL 404 or corrupted SHA-256 causes transaction to fail execution closed.
-- `test_integration_04_repeat_review_revert` (implemented/pending): Once a proposal is reviewed, repeating `review_release()` on the non-pending state reverts.
+1. **Failed Historical ApiSeal Attempt**:
+   - Transaction: `0x32afea2a943b1b3817e0f185b14779947f49dbe835ede0de779677df9f213899`
+   - Result: `FINALIZED` / `MAJORITY_AGREE` / `FINISHED_WITH_ERROR` (`invalid_contract runner malformed`)
+   - Contract Address: Intended `0x6c64Cb4BA596a1dd40440Fb045B9e71d047786e5` (**NOT created**)
+   - Reason: Old runner `babwp9t...` was not supported by Studio Devnet nodes.
+
+2. **Noncanonical Compatibility Control**:
+   - Contract: `0x6c7ab7e40B6C9870F58D0304E3B5EE062d127B1C`
+   - Runner: `py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng`
+   - Source SHA-256: `a8559f9c732b7db85c0573a63010a2b56d58e0fb8322abf76e70469ff2e04336` (Control source only; not ApiSeal)
+
+3. **Phase 5 Disposable Canary**:
+   - Contract: `0x75093F8FfE8C7aCDafDec65699A7d97eFf0e5b5b`
+   - Deploy Tx: `0xc8bcfd4f6ab4468ccfb086ac556fb424ce4f11a416840df8afc5b7fa7efb9b34` (`FINISHED_WITH_RETURN`)
+   - Write Tx (`exercise_nondet`): `0x8cb623af7ae7d85391ff5379c7d736d6f91b85d2ef8a0ed5671018130c2bda00` (`FINISHED_WITH_RETURN`)
+   - Confirmed `gl.nondet.web.get`, `gl.nondet.exec_prompt`, and `gl.vm.run_nondet` under validator consensus.
+
+4. **Phase 6 Four Live Integration Scenarios (ALL PASSED)**:
+   Executed via TypeScript harness [`deploy/run_live_integration.ts`](deploy/run_live_integration.ts) using public `genlayer-js` APIs with zero monkey patching:
+
+   - **Scenario 1 (Compatible release accepted)**:
+     - Contract: `0x073df726542937D4494EF7c86dD2ab373ac96B49` (deploy tx: `0x56f37fa88671c8c72d91136f9f0bf80ce44a1dcc4a2666a9684305c8e4220c20`)
+     - Propose tx: `0x58ffed27322961d0ac4b6eb6e218aaa5881cd55d637c46f49e1fd53af30c2cc1`
+     - Review tx: `0xabb2ae2a79ca8bd6e87b7b5b193f0ae928bb800218ee53bf634d7dc34dcec955` (`FINISHED_WITH_RETURN`)
+     - Result: **PASSED** (Promoted to v1.0.1, `accepted_release_count = 1`).
+   - **Scenario 2 (Insufficient version bump rejected)**:
+     - Contract: `0x3C8541F4Eed44539f9748Dd8790E7c83828B6f87` (deploy tx: `0xcd4cca4a6a88fbab22b01b6ed48a7f1bb7759e7b65df8d85370ed949b93c667b`)
+     - Propose tx: `0xec42cba788474f890591326ee07277e5ed4fcc566dbb8dfa268c4cc021266fae`
+     - Review tx: `0xe1a28e61d21921e12e8b22c7084310318b3201dec2f1cd356d3d62abec7e438c` (`FINISHED_WITH_RETURN`)
+     - Result: **PASSED** (Deterministically rejected; baseline retained at v1.0.0, `rejected_release_count = 1`, recorded in history).
+   - **Scenario 3 (Hash mismatch / fetch failure reverted)**:
+     - Contract: `0x834cd190D05deEA20816190A4212B41519CD0351` (deploy tx: `0x8b28744cf2e83e8e03a136b60d6c64b61af2dbde74e5892daba86dcdf06519d4`)
+     - Propose tx: `0x453c3708420d07144e5344b6d9ea2336e0f88b4bc33deeea930b27814a18386c`
+     - Review tx: `0xd8ee84c588001e3ae12acd918fa5e81cbd7eb5cb568340e4c30ad9d7f5cce23f` (`FINISHED_WITH_ERROR`)
+     - Result: **PASSED** (Failed closed with revert as required; proposal remained in PENDING state).
+   - **Scenario 4 (Repeated review prevented/reverted)**:
+     - Contract: `0xAcD0a05625E48566A163451dc19e318515b64B1E` (deploy tx: `0x6df54a56c6a60ddcf3278452604bb5455a416a948c06a5e56698db62d0d11eb5`)
+     - First review tx: `0x7de71718ab125d4dc89ba163ea738fc973504110492b064a04eae793f2f9e973` (`FINISHED_WITH_RETURN`, status -> READY)
+     - Repeat review tx: `0xd99662988b1573f1a21ef2456e50f34854e057d360ea75e9ca3c332414a541c4` (`FINISHED_WITH_ERROR`)
+     - Result: **PASSED** (Repeat review reverted; state preserved READY).
+
+Detailed receipts: [`evidence/live_scenarios_receipt.json`](evidence/live_scenarios_receipt.json).
 
 ---
 
-## Deployment and On-Chain Verification
+## Canonical Deployment and On-Chain Verification
 
-*Deployment to GenLayer Studio Devnet is triggered explicitly via authorized sessions and recorded with real transaction receipts.*
+*Following the Mandatory Safety Gate, the final canonical ApiSeal contract was deployed and verified.*
 
-### Deployment Parameters
+### Canonical Deployment Record
+- **Contract Address**: `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4`
+- **Deployment Transaction Hash**: `0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542`
+- **Deployer**: `0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD` (`coverlock-submitter`)
 - **Network**: GenLayer Studio Devnet Preview (Chain ID: `61997`)
-- **RPC**: `https://studio-dev.genlayer.com/api`
-- **Contract Source Hash**: `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`
-- **Constructor Arguments**: `[deployer_address, "org.genlayer.apiseal", 86400]`
+- **Consensus Status**: `FINALIZED` (Status 7, `MAJORITY_AGREE`)
+- **GenVM Execution Result**: `FINISHED_WITH_RETURN`
+- **Explorer Contract**: [0xA631C30A79e69695a8d17D21F4F2497Ff52522A4](https://explorer-studio-dev.genlayer.com/contract/0xA631C30A79e69695a8d17D21F4F2497Ff52522A4)
+- **Explorer Transaction**: [0xd888072437a572b8...](https://explorer-studio-dev.genlayer.com/tx/0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542)
 
-### Deployment Execution Script
-The deployment script [`deploy/deployScript.ts`](deploy/deployScript.ts):
-- Pre-computes and displays source SHA-256 before interacting with the network.
-- Requires private key via `GENLAYER_PRIVATE_KEY` or `PRIVATE_KEY` environment variables.
-- Calls `client.estimateTransactionFees()` using GenLayerJS and fails closed if fee estimation fails.
-- Submits contract deployment transaction with typed `TransactionFeeOptions`.
-- Immediately writes transaction hash to temporary receipt file.
-- Waits for finalization, verifies consensus success, and extracts deployed address from `receipt.txDataDecoded?.contractAddress`.
-
-### On-Chain Source Verification
+### On-Chain Source Verification Proof
 The verification script [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts):
-- Reads deployed contract address from `CONTRACT_ADDRESS` or `deploy/deployment_receipt.json`.
-- Fetches on-chain deployed source code via `client.getContractCode(contractAddress)`.
+- Fetches on-chain deployed source code via `client.getContractCode("0xA631C30A79e69695a8d17D21F4F2497Ff52522A4")`.
 - Compares on-chain code byte-for-byte against local [`contracts/apiseal.py`](contracts/apiseal.py).
-- Asserts identical SHA-256 checksums, exiting with code 0 on match or code 1 on mismatch.
+- **Result: EXACT BYTE-FOR-BYTE MATCH (37,710 characters, SHA-256: `0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602`).**
 
 ---
 
@@ -428,11 +452,11 @@ The verification script [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts):
 | **Do validators independently verify all consequential output?** | Yes. Under Optimistic Democracy, all validators re-run manifest retrieval, pre-image hash verification, and LLM classification. Consensus compares the exact list of `(id, status)` tuples. | [`contracts/apiseal.py`](contracts/apiseal.py#L665-L710) | LLM reasoning explanations are omitted to prevent nondeterministic string divergence. |
 | **Can malformed or injected model output affect state?** | No. Top-level and item-level model output schemas are validated strictly. IDs must exactly match existing canonical IDs. Extraneous keys, duplicate IDs, or missing IDs revert. | Direct tests 23, 24, 25, 26, 32, 33 | Model cannot add surfaces or alter contract decision logic. |
 | **Can a proposal remain stuck forever?** | No. The contract enforces a review deadline. Owner can cancel anytime, and anyone can call `expire_proposal()` after deadline elapses. | Direct tests 09, 10, 11 | Clock depends on blockchain validator timestamp. |
-| **Can a proposal be reviewed twice?** | No. Reviewing atomically transitions state to `READY`. A repeat call to `review_release()` reverts immediately. | Direct test 29; Live test 04 (implemented/pending) | Requires caller to submit a new proposal to trigger another review. |
+| **Can a proposal be reviewed twice?** | No. Reviewing atomically transitions state to `READY`. A repeat call to `review_release()` reverts immediately. | Direct test 29; Live Scenario 04 (`0xd9966298...` reverted) | Requires caller to submit a new proposal to trigger another review. |
 | **Is storage bounded?** | Yes. Manifests are capped at 12,000 characters. History maintains at most 10 records using FIFO ring buffer eviction. | Direct tests 04, 30 | Historical proposals past the 10-item cap are evicted from on-chain storage. |
 | **Is parsing schema-aware rather than regex-based?** | Yes. Manifests are parsed using strict `json.loads` followed by full structural recursive schema validation. | Direct tests 01, 02, 03 | Malformed JSON or unknown fields trigger immediate revert. |
-| **Is the submitted source identical to deployed source?** | Not yet proven because no deployment exists. Local source SHA-256 is fixed (`d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`). Script `deploy/verify_onchain.ts` is prepared to prove byte-for-byte equality after deployment. | Script [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts) prepared; awaiting deployment | Do not answer “Yes” before observing the deployed code on-chain. |
-| **Which claims are local-test claims versus live-chain claims?** | 38 direct unit tests are offline simulator evidence. Four live integration scenarios are implemented but NOT RUN. No Studio validator-consensus lifecycle proof exists yet. | Clearly separated sections in README and `evidence/studio-dev.md` | Local tests use deterministic simulator stubs; live tests require explicit private key environment and test GEN. |
+| **Is the submitted source identical to deployed source?** | **YES.** Byte-for-byte exact equality verified on-chain against `getContractCode` at address `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4`. | [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts) exited 0; SHA-256: `0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602` | Local canonical code and deployed on-chain bytecode are identical. |
+| **Which claims are local-test claims versus live-chain claims?** | 44 direct unit tests are offline simulator evidence. Live canary, all 4 live scenarios, and canonical deployment are real on-chain transaction receipts on Studio Devnet. | Clearly separated sections in README and `evidence/studio-dev.md` | Local tests use deterministic simulator stubs; live tests ran against active network validators. |
 | **Are there any value transfers or escrow risks?** | Zero. ApiSeal performs no token transfers, accepts no payable transactions, and holds no escrow funds. | [`contracts/apiseal.py`](contracts/apiseal.py) (no `payable` methods) | Cannot be used as a financial escrow. |
 
 ---
@@ -445,19 +469,21 @@ The verification script [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts):
 - [x] **Guaranteed Lifecycle Exits**: Every pending proposal has both owner cancellation and permissionless deadline expiry exits.
 - [x] **Replay / Double-Review Immunity**: State transitions prevent repeating a review once resolved.
 - [x] **Bounded Storage & Memory**: 12,000 char manifest cap, 12 surface cap, and 10-entry FIFO history buffer.
-- [ ] **Deployed-Source Parity**: Pending deployment and successful `getContractCode` byte-for-byte comparison.
+- [x] **Deployed-Source Parity**: Proven byte-for-byte on-chain via `gen_getContractCode` (`0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602`).
 - [x] **Adversarial & Negative Testing**: Direct test suite exercises malformed JSON, prompt injection, invalid statuses, out-of-bounds numbers, and timestamp failures.
 - [x] **No Mock Claims as Live Proof**: Offline simulation and direct tests are strictly separated from live on-chain execution evidence.
+- [x] **All 4 Real Live Scenarios Executed**: Proven against active Studio Devnet validators without monkey patching.
+- [x] **Portal Submission Boundary**: Explicit confirmation that portal submission has not yet been performed.
 
 ---
 
-## Known Limitations
+## Known Limitations & Boundaries
 
 1. **Manifest Certification Only**: Validators certify whether the published API manifest represents a compatible evolution. ApiSeal does not prove that the publisher's live production backend adheres to its manifest.
 2. **Preview Network Resets**: Studio Devnet is an active development preview network subject to periodic state resets.
 3. **Validator Model Consensus**: Semantic classification depends on LLM consensus across validators; highly ambiguous natural language contracts will classify as `UNCLEAR` and fail closed.
 4. **Fixture Availability**: Live integration tests depend on immutable commit-pinned raw GitHub URLs remaining accessible over HTTPS.
-5. **GenLayer Portal Acceptance**: This repository documents technical correctness and verification on Studio Devnet; no unverified claim of Portal listing is made.
+5. **GenLayer Portal Acceptance**: This repository documents technical correctness and verification on Studio Devnet; the final submission to the GenLayer Portal has not yet been performed and remains reserved for the project steward.
 
 ---
 

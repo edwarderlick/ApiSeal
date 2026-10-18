@@ -1,0 +1,196 @@
+{
+  "timestamp": "2026-10-18T09:39:03.578Z",
+  "contractSourceHash": "0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602",
+  "signerAddress": "0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD",
+  "network": "GenLayer Studio Devnet (61997)",
+  "scenarios": [
+    {
+      "scenarioNumber": 1,
+      "scenarioName": "Compatible release accepted",
+      "contractAddress": "0x073df726542937D4494EF7c86dD2ab373ac96B49",
+      "deploymentTxHash": "0x56f37fa88671c8c72d91136f9f0bf80ce44a1dcc4a2666a9684305c8e4220c20",
+      "transactions": [
+        {
+          "action": "register_baseline",
+          "txHash": "0xb52a792124b0251fbde9db439cb98778f9af01a8c03365469fba55379c495673",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        },
+        {
+          "action": "propose_release",
+          "txHash": "0x58ffed27322961d0ac4b6eb6e218aaa5881cd55d637c46f49e1fd53af30c2cc1",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        },
+        {
+          "action": "review_release",
+          "txHash": "0xabb2ae2a79ca8bd6e87b7b5b193f0ae928bb800218ee53bf634d7dc34dcec955",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        }
+      ],
+      "finalState": {
+        "accepted_release_count": 1,
+        "cancelled_count": 0,
+        "canonical_manifest": "{\"api_name\":\"Payment Gateway API\",\"surfaces\":[{\"behavior_contract\":\"Synchronously debits customer payment source with replay protection\",\"id\":\"create_charge\",\"method\":\"POST\",\"path\":\"/charges\",\"request_contract\":\"Amount in cents, currency, and optional idempotency_key header\",\"response_contract\":\"Charge id, status, and created timestamp\"},{\"behavior_contract\":\"Idempotent retrieval of charge details\",\"id\":\"get_charge\",\"method\":\"GET\",\"path\":\"/charges/{id}\",\"request_contract\":\"Charge id in path\",\"response_contract\":\"Charge record or 404\"}]}",
+        "canonical_manifest_sha256": "5d1c3fe497e44fc95a704e7ae49fb0c99a4af0b6b99fa12afdef0a959681701c",
+        "current_version": {
+          "major": 1,
+          "minor": 0,
+          "patch": 1
+        },
+        "expired_count": 0,
+        "rejected_release_count": 0
+      },
+      "passed": true
+    },
+    {
+      "scenarioNumber": 2,
+      "scenarioName": "Insufficient version bump rejected",
+      "contractAddress": "0x3C8541F4Eed44539f9748Dd8790E7c83828B6f87",
+      "deploymentTxHash": "0xcd4cca4a6a88fbab22b01b6ed48a7f1bb7759e7b65df8d85370ed949b93c667b",
+      "transactions": [
+        {
+          "action": "register_baseline",
+          "txHash": "0x466eb42cbb857a62806970fee192632e529f7836f544517d7af2326bc0743e87",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        },
+        {
+          "action": "propose_release",
+          "txHash": "0xec42cba788474f890591326ee07277e5ed4fcc566dbb8dfa268c4cc021266fae",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        },
+        {
+          "action": "review_release",
+          "txHash": "0xe1a28e61d21921e12e8b22c7084310318b3201dec2f1cd356d3d62abec7e438c",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        }
+      ],
+      "finalState": {
+        "curr": {
+          "accepted_release_count": 0,
+          "cancelled_count": 0,
+          "canonical_manifest": "{\"api_name\":\"Payment Gateway API\",\"surfaces\":[{\"behavior_contract\":\"Synchronously debits customer payment source\",\"id\":\"create_charge\",\"method\":\"POST\",\"path\":\"/charges\",\"request_contract\":\"Amount in cents and currency\",\"response_contract\":\"Charge id and status\"},{\"behavior_contract\":\"Idempotent retrieval of charge details\",\"id\":\"get_charge\",\"method\":\"GET\",\"path\":\"/charges/{id}\",\"request_contract\":\"Charge id in path\",\"response_contract\":\"Charge record or 404\"}]}",
+          "canonical_manifest_sha256": "b7c270d15321d5e48459542560ae9b1d19db1dfd9debf1231d3b20f141085a85",
+          "current_version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+          },
+          "expired_count": 0,
+          "rejected_release_count": 1
+        },
+        "history": {
+          "added_ids": [
+            "refund_charge"
+          ],
+          "breaking_ids": [],
+          "candidate_hash": "1c7d2fe54ae97fea4d82cbb112a243f8e16e10a2ff84430bfbdce3c75ecde888",
+          "prior_version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+          },
+          "proposal_id": 1,
+          "proposed_version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 1
+          },
+          "terminal_result": "REJECTED",
+          "terminal_timestamp": 1792315939,
+          "unclear_ids": []
+        }
+      },
+      "passed": true
+    },
+    {
+      "scenarioNumber": 3,
+      "scenarioName": "Hash mismatch or fetch failure rejected",
+      "contractAddress": "0x834cd190D05deEA20816190A4212B41519CD0351",
+      "deploymentTxHash": "0x8b28744cf2e83e8e03a136b60d6c64b61af2dbde74e5892daba86dcdf06519d4",
+      "transactions": [
+        {
+          "action": "register_baseline",
+          "txHash": "0x00aa424336c063a0494e2564c8d43fcef5fb5e8ec9e49bf196224e960e0b728a",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        },
+        {
+          "action": "propose_release",
+          "txHash": "0x453c3708420d07144e5344b6d9ea2336e0f88b4bc33deeea930b27814a18386c",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        },
+        {
+          "action": "review_release",
+          "txHash": "0xd8ee84c588001e3ae12acd918fa5e81cbd7eb5cb568340e4c30ad9d7f5cce23f",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_ERROR",
+          "consensusOk": false
+        }
+      ],
+      "finalState": {
+        "owner": "0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD",
+        "project_id": "api.payments.core",
+        "review_window_seconds": 86400,
+        "status": "PENDING"
+      },
+      "passed": true
+    },
+    {
+      "scenarioNumber": 4,
+      "scenarioName": "Repeated review prevented/reverted",
+      "contractAddress": "0xAcD0a05625E48566A163451dc19e318515b64B1E",
+      "deploymentTxHash": "0x6df54a56c6a60ddcf3278452604bb5455a416a948c06a5e56698db62d0d11eb5",
+      "transactions": [
+        {
+          "action": "register_baseline",
+          "txHash": "0xc32dd317b76f15442e5351377124ab5de5f7ede93143eb205c6f44c8d4a7cdad",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        },
+        {
+          "action": "propose_release",
+          "txHash": "0xf98e1348ace2ddf61535a43ca15fdda930b4bfba8e8d6bdfafeb6cc32e5ff6e6",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        },
+        {
+          "action": "review_release_1",
+          "txHash": "0x7de71718ab125d4dc89ba163ea738fc973504110492b064a04eae793f2f9e973",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_RETURN",
+          "consensusOk": true
+        },
+        {
+          "action": "review_release_2_repeat",
+          "txHash": "0xd99662988b1573f1a21ef2456e50f34854e057d360ea75e9ca3c332414a541c4",
+          "status": 7,
+          "executionResult": "FINISHED_WITH_ERROR",
+          "consensusOk": false
+        }
+      ],
+      "finalState": {
+        "owner": "0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD",
+        "project_id": "api.payments.core",
+        "review_window_seconds": 86400,
+        "status": "READY"
+      },
+      "passed": true
+    }
+  ]
+}

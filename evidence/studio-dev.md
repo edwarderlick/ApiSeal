@@ -6,16 +6,17 @@ ApiSeal explicitly targets the **GenLayer Studio development preview** (Studio D
 
 | Parameter | Specification | Notes |
 | :--- | :--- | :--- |
-| **Network Name** | GenLayer Studio Devnet | Dedicated preview network for upcoming protocol stack |
+| **Network Name** | GenLayer Studio Devnet | Dedicated preview network for protocol stack |
 | **Network Preset** | `studioDevnet` (SDK) / `studio_devnet` (gltest) | Built-in definition in `genlayer-js/chains` and `gltest` |
-| **Canonical RPC** | `https://studio-dev.genlayer.com/api` | Development preview endpoint |
+| **Canonical RPC** | `https://studio-dev.genlayer.com/api` | Development preview JSON-RPC endpoint |
 | **Chain ID** | `61997` | Distinct from Studionet (`61999`) and Localnet (`61127`) |
-| **Native Token** | GEN (18 decimals) | Testnet faucet tokens |
-| **Consensus Engine** | Optimistic Democracy v0.6 RC | Equivalence principle validation with `gl.vm.run_nondet_unsafe` |
+| **Native Token** | GEN (18 decimals) | Faucet testnet tokens |
+| **Consensus Engine** | Optimistic Democracy | Multi-validator equivalence validation via `gl.vm.run_nondet` |
+| **Target Runner** | `py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng` | Accepted Studio Devnet GenVM execution bundle |
 
 > [!IMPORTANT]
 > **Network Disambiguation**:
-> - Studio Devnet (`chain ID 61997`) is the dedicated preview network.
+> - Studio Devnet (`chain ID 61997`) is the preview network currently running active validators.
 > - Hosted Studionet (`chain ID 61999`) is the separate stable sandbox environment.
 > ApiSeal strictly isolates configurations to avoid cross-chain replay or incorrect node targeting.
 
@@ -25,7 +26,7 @@ ApiSeal explicitly targets the **GenLayer Studio development preview** (Studio D
 
 | Tool / Dependency | Version / Identifier | Purpose |
 | :--- | :--- | :--- |
-| **GenVM Runner** | `py-genlayer:babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0` | v0.6.0-rc9 runner artifact bundle |
+| **Target GenVM Runner** | `py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng` | Studio Devnet accepted execution environment |
 | **genvm-linter** | `0.11.0` | AST safety checks, schema generation, type validation |
 | **genlayer-py** | `0.19.0rc2` | Python smart contract types, ABI codecs, and storage |
 | **genlayer-test** | `0.30.0rc2` | Test runner, simulator stubs, transaction assertions |
@@ -35,23 +36,154 @@ ApiSeal explicitly targets the **GenLayer Studio development preview** (Studio D
 
 ---
 
-## Contract Integrity & Canonical Source Hash
+## Canonical Contract Integrity & Source Hashes
 
 - **Contract Path**: `contracts/apiseal.py`
-- **Source SHA-256**: `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`
-- **Character Count**: `37,736`
-- **Total Lines**: `1,005`
+- **Canonical Source SHA-256**: `0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602`
+- **Character Count**: `37,710` bytes
+- **Total Lines**: `1,004`
+- **ABI Schema SHA-256**: `30af51d95e9613ac8595eacda8375b3af87416b95bfc7bdc65cd0717e7884378`
+- **Historical Pre-Port Source Hash**: `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587` (Runner `babwp9t...` was malformed on Studio Devnet)
+
+---
+
+## Historical & Diagnostic Deployments (Separation of Records)
+
+### 1. Failed Historical ApiSeal Attempt (Runner Incompatibility)
+- **Transaction Hash**: `0x32afea2a943b1b3817e0f185b14779947f49dbe835ede0de779677df9f213899`
+- **Intended Contract Address**: `0x6c64Cb4BA596a1dd40440Fb045B9e71d047786e5` (**Contract was NOT created**)
+- **Consensus Status**: `FINALIZED` (Status 7)
+- **Execution Result**: `FINISHED_WITH_ERROR`
+- **Reported Leader Error**: `invalid_contract runner malformed`
+- **Diagnosis**: The previously assumed runner (`py-genlayer:babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0`) was not accepted by active Studio Devnet validator nodes.
+
+### 2. Noncanonical Compatibility-Control Contract
+- **Contract Address**: `0x6c7ab7e40B6C9870F58D0304E3B5EE062d127B1C`
+- **Runner**: `py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng`
+- **Source SHA-256**: `a8559f9c732b7db85c0573a63010a2b56d58e0fb8322abf76e70469ff2e04336`
+- **Status**: Successful deployment proof for the `5jycge...` runner. Not canonical ApiSeal source.
+
+### 3. Phase 5: Disposable Live Canary
+Before executing the full ApiSeal integration scenarios, a disposable canary was deployed to prove end-to-end validator consensus using the target runner and required nondeterministic APIs:
+- **Contract Address**: `0x75093F8FfE8C7aCDafDec65699A7d97eFf0e5b5b`
+- **Deploy Transaction Hash**: `0xc8bcfd4f6ab4468ccfb086ac556fb424ce4f11a416840df8afc5b7fa7efb9b34`
+  - Consensus: `MAJORITY_AGREE`, Execution: `FINISHED_WITH_RETURN`
+- **Nondeterministic Write Transaction Hash (`exercise_nondet`)**: `0x8cb623af7ae7d85391ff5379c7d736d6f91b85d2ef8a0ed5671018130c2bda00`
+  - Exercised: `gl.nondet.web.get` + `gl.nondet.exec_prompt` + `gl.vm.run_nondet`
+  - Consensus: `MAJORITY_AGREE`, Execution: `FINISHED_WITH_RETURN`
+- **Readback Result**: `get_status()` returned `"SUCCESS"`
+- **Canary Result**: **PASSED** (Diagnostic evidence proving target runtime acceptance).
+
+---
+
+## Phase 6: Four Real Live Integration Scenarios (Passed)
+
+All 4 integration scenarios were executed against disposable candidate contracts on Studio Devnet using immutable, commit-pinned fixtures (`c5f6a834bb6ff51f63862b660389e4e795290a05`). The test harness uses public `genlayer-js` APIs with zero monkey patching.
+
+Detailed machine-readable receipt saved in: [`evidence/live_scenarios_receipt.json`](live_scenarios_receipt.json).
+
+### Summary Table
+
+| Scenario # | Focus | Disposable Contract Address | Key Transaction Hash | Consensus & GenVM Execution | Result |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Scenario 1** | Compatible release accepted | `0x073df726542937D4494EF7c86dD2ab373ac96B49` | `0xabb2ae2a79ca8bd6e87b7b5b193f0ae928bb800218ee53bf634d7dc34dcec955` (review) | `MAJORITY_AGREE` / `FINISHED_WITH_RETURN` | **PASSED** (Promoted to v1.0.1) |
+| **Scenario 2** | Insufficient bump rejected | `0x3C8541F4Eed44539f9748Dd8790E7c83828B6f87` | `0xe1a28e61d21921e12e8b22c7084310318b3201dec2f1cd356d3d62abec7e438c` (review) | `MAJORITY_AGREE` / `FINISHED_WITH_RETURN` | **PASSED** (Deterministic rejection; baseline retained) |
+| **Scenario 3** | Hash mismatch / fetch failure | `0x834cd190D05deEA20816190A4212B41519CD0351` | `0xd8ee84c588001e3ae12acd918fa5e81cbd7eb5cb568340e4c30ad9d7f5cce23f` (review) | `MAJORITY_AGREE` / `FINISHED_WITH_ERROR` | **PASSED** (Failed closed with revert; state remained PENDING) |
+| **Scenario 4** | Repeated review prevented | `0xAcD0a05625E48566A163451dc19e318515b64B1E` | `0xd99662988b1573f1a21ef2456e50f34854e057d360ea75e9ca3c332414a541c4` (repeat review) | `MAJORITY_AGREE` / `FINISHED_WITH_ERROR` | **PASSED** (Repeat review reverted; state preserved READY) |
+
+### Detailed Scenario Receipts
+
+#### Scenario 1: Compatible Release Accepted
+- **Candidate Contract**: `0x073df726542937D4494EF7c86dD2ab373ac96B49`
+- **Deploy Tx**: `0x56f37fa88671c8c72d91136f9f0bf80ce44a1dcc4a2666a9684305c8e4220c20` (`FINISHED_WITH_RETURN`)
+- **Register Baseline Tx**: `0xb52a792124b0251fbde9db439cb98778f9af01a8c03365469fba55379c495673` (`FINISHED_WITH_RETURN`)
+- **Propose Release Tx**: `0x58ffed27322961d0ac4b6eb6e218aaa5881cd55d637c46f49e1fd53af30c2cc1` (`FINISHED_WITH_RETURN`)
+- **Review Release Tx**: `0xabb2ae2a79ca8bd6e87b7b5b193f0ae928bb800218ee53bf634d7dc34dcec955` (`FINISHED_WITH_RETURN`)
+- **Observed State Readback**: `accepted_release_count = 1`, `current_version = {1, 0, 1}`, `canonical_manifest_sha256 = 5d1c3fe4...`
+
+#### Scenario 2: Insufficient Version Bump Rejected
+- **Candidate Contract**: `0x3C8541F4Eed44539f9748Dd8790E7c83828B6f87`
+- **Deploy Tx**: `0xcd4cca4a6a88fbab22b01b6ed48a7f1bb7759e7b65df8d85370ed949b93c667b` (`FINISHED_WITH_RETURN`)
+- **Register Baseline Tx**: `0x466eb42cbb857a62806970fee192632e529f7836f544517d7af2326bc0743e87` (`FINISHED_WITH_RETURN`)
+- **Propose Release Tx**: `0xec42cba788474f890591326ee07277e5ed4fcc566dbb8dfa268c4cc021266fae` (`FINISHED_WITH_RETURN`)
+- **Review Release Tx**: `0xe1a28e61d21921e12e8b22c7084310318b3201dec2f1cd356d3d62abec7e438c` (`FINISHED_WITH_RETURN`)
+- **Observed State Readback**: `rejected_release_count = 1`, `current_version = {1, 0, 0}` (unchanged), history entry: `terminal_result = REJECTED`, `added_ids = ["refund_charge"]`.
+
+#### Scenario 3: Hash Mismatch / Fetch Failure Reverted
+- **Candidate Contract**: `0x834cd190D05deEA20816190A4212B41519CD0351`
+- **Deploy Tx**: `0x8b28744cf2e83e8e03a136b60d6c64b61af2dbde74e5892daba86dcdf06519d4` (`FINISHED_WITH_RETURN`)
+- **Register Baseline Tx**: `0x00aa424336c063a0494e2564c8d43fcef5fb5e8ec9e49bf196224e960e0b728a` (`FINISHED_WITH_RETURN`)
+- **Propose Release Tx**: `0x453c3708420d07144e5344b6d9ea2336e0f88b4bc33deeea930b27814a18386c` (`FINISHED_WITH_RETURN`)
+- **Review Release Tx**: `0xd8ee84c588001e3ae12acd918fa5e81cbd7eb5cb568340e4c30ad9d7f5cce23f` (`FINISHED_WITH_ERROR`)
+- **Observed State Readback**: Review transaction reverted as expected under validator consensus. Contract status remained `PENDING` (fail-closed integrity preserved).
+
+#### Scenario 4: Repeated Review Revert Workflow
+- **Candidate Contract**: `0xAcD0a05625E48566A163451dc19e318515b64B1E`
+- **Deploy Tx**: `0x6df54a56c6a60ddcf3278452604bb5455a416a948c06a5e56698db62d0d11eb5` (`FINISHED_WITH_RETURN`)
+- **Register Baseline Tx**: `0xc32dd317b76f15442e5351377124ab5de5f7ede93143eb205c6f44c8d4a7cdad` (`FINISHED_WITH_RETURN`)
+- **Propose Release Tx**: `0xf98e1348ace2ddf61535a43ca15fdda930b4bfba8e8d6bdfafeb6cc32e5ff6e6` (`FINISHED_WITH_RETURN`)
+- **First Review Tx**: `0x7de71718ab125d4dc89ba163ea738fc973504110492b064a04eae793f2f9e973` (`FINISHED_WITH_RETURN`, status transitioned to `READY`)
+- **Second Review Tx (Repeat)**: `0xd99662988b1573f1a21ef2456e50f34854e057d360ea75e9ca3c332414a541c4` (`FINISHED_WITH_ERROR`)
+- **Observed State Readback**: Repeat review reverted immediately with GenVM error. Status remained `READY`.
+
+---
+
+## Phase 7: Canonical Deployment Record & On-Chain Parity
+
+Following the successful execution of the Canary and all 4 Live Integration Scenarios, the final canonical contract was deployed to Studio Devnet:
+
+| Property | Value |
+| :--- | :--- |
+| **Canonical Contract Address** | `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4` |
+| **Deployment Transaction Hash** | `0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542` |
+| **Deployer Public Address** | `0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD` (`coverlock-submitter`) |
+| **Network** | GenLayer Studio Devnet Preview (Chain ID: `61997`) |
+| **Consensus Result** | `FINALIZED` (Status 7, `MAJORITY_AGREE`) |
+| **GenVM Execution Result** | `FINISHED_WITH_RETURN` |
+| **Local Source SHA-256** | `0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602` |
+| **On-Chain Source SHA-256** | `0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602` |
+| **Byte-For-Byte Parity Proof** | **PASS** (100% exact character match: 37,710 bytes via `gen_getContractCode`) |
+| **Explorer Contract Link** | [0xA631C30A79e69695a8d17D21F4F2497Ff52522A4](https://explorer-studio-dev.genlayer.com/contract/0xA631C30A79e69695a8d17D21F4F2497Ff52522A4) |
+| **Explorer Transaction Link** | [0xd888072437a572b8...](https://explorer-studio-dev.genlayer.com/tx/0xd888072437a572b8c1b33b10cf18b7fabbf46be9fa114d78cee0a2c791c6a542) |
+
+### Initialized State Readback Verification
+
+The following safe view methods were executed against the canonical contract address to confirm clean initialization:
+
+```json
+{
+  "get_config": {
+    "owner": "0x9CE8B4b8A355421f01779Ebd0c49e22A8F1FF0DD",
+    "project_id": "org.genlayer.apiseal",
+    "review_window_seconds": 86400,
+    "status": "UNINITIALIZED"
+  },
+  "get_current_release": {
+    "current_version": {"major": 0, "minor": 0, "patch": 0},
+    "canonical_manifest": "",
+    "canonical_manifest_sha256": "",
+    "accepted_release_count": 0,
+    "rejected_release_count": 0,
+    "cancelled_count": 0,
+    "expired_count": 0
+  },
+  "get_pending_proposal": {
+    "proposal_nonce": 0,
+    "candidate_url": "",
+    "candidate_sha256": "",
+    "proposed_version": {"major": 0, "minor": 0, "patch": 0},
+    "pending_timestamp": 0,
+    "review_deadline": 0
+  },
+  "get_history_count": 0
+}
+```
 
 ---
 
 ## Static Analysis & ABI Validation Evidence
 
 ### 1. `genvm-lint check` (AST Safety & Contract Validation)
-Command executed:
-```bash
-genvm-lint check contracts/apiseal.py
-```
-Output:
 ```text
 ✓ Lint passed (3 checks)
 ✓ Validation passed
@@ -60,194 +192,39 @@ Output:
 ```
 
 ### 2. ABI Schema Extraction & Parity (`genvm-lint schema`)
-Local command:
-```bash
-genvm-lint schema -o deploy/schema.json --json contracts/apiseal.py
-```
-Public CI verification:
-In GitHub Actions CI, the schema is generated to a temporary file (`/tmp/schema_check/schema.json`) and compared byte-for-byte with `deploy/schema.json` via `diff -u`. Stale schema causes CI failure.
-
-Tracked schema output (`deploy/schema.json`):
-```json
-{
-  "ctor": {
-    "params": [
-      ["owner", "address"],
-      ["project_id", "string"],
-      ["review_window_seconds", "int"]
-    ],
-    "kwparams": {}
-  },
-  "methods": {
-    "cancel_proposal": { "params": [], "kwparams": {}, "readonly": false, "ret": "null", "payable": false },
-    "expire_proposal": { "params": [], "kwparams": {}, "readonly": false, "ret": "null", "payable": false },
-    "get_config": { "params": [], "kwparams": {}, "readonly": true, "ret": "dict" },
-    "get_current_release": { "params": [], "kwparams": {}, "readonly": true, "ret": "dict" },
-    "get_history": { "params": [["index", "int"]], "kwparams": {}, "readonly": true, "ret": "dict" },
-    "get_history_count": { "params": [], "kwparams": {}, "readonly": true, "ret": "int" },
-    "get_pending_proposal": { "params": [], "kwparams": {}, "readonly": true, "ret": "dict" },
-    "propose_release": {
-      "params": [
-        ["candidate_url", "string"],
-        ["candidate_sha256", "string"],
-        ["major", "int"],
-        ["minor", "int"],
-        ["patch", "int"]
-      ],
-      "kwparams": {},
-      "readonly": false,
-      "ret": "null",
-      "payable": false
-    },
-    "recompute_history_result": { "params": [["index", "int"]], "kwparams": {}, "readonly": true, "ret": "string" },
-    "register_baseline": {
-      "params": [
-        ["manifest_json", "string"],
-        ["major", "int"],
-        ["minor", "int"],
-        ["patch", "int"]
-      ],
-      "kwparams": {},
-      "readonly": false,
-      "ret": "null",
-      "payable": false
-    },
-    "review_release": { "params": [], "kwparams": {}, "readonly": false, "ret": "null", "payable": false }
-  }
-}
-```
+The schema extracted from `contracts/apiseal.py` is byte-for-byte identical to tracked [`deploy/schema.json`](../deploy/schema.json) (SHA-256: `30af51d95e9613ac8595eacda8375b3af87416b95bfc7bdc65cd0717e7884378`).
 
 ---
 
-## Direct Test Suite Results
+## Offline Direct Test Suite Results
 
 Test Command:
 ```bash
-pytest tests/direct/test_apiseal.py -v
+pytest tests/direct -v
 ```
 
-Execution Summary: **38 passed in 0.28s**
+Execution Summary: **44 passed in 0.32s** (100% pass offline)
 
-| # | Test Identifier | Verification Focus | Status |
+- Covers exact manifest parsing, AST inspection, boundary checking, SemVer rules, malicious inputs, fail-closed handling, history recomputation, and signer resolution.
+
+---
+
+## Public Fixture Hashes & Commit-Pinned URLs
+
+| Fixture Name | Path | SHA-256 | Commit-Pinned URL |
 | :--- | :--- | :--- | :--- |
-| 1 | `test_01_exact_manifest_schema_and_unknown_key_rejection` | Reject unexpected/missing keys at all manifest levels | **PASSED** |
-| 2 | `test_02_malformed_json` | Parse strictly with `json.loads`; reject syntax errors and empty strings | **PASSED** |
-| 3 | `test_03_nested_or_duplicate_ids` | Enforce ID uniqueness and lowercase regex `^[a-z][a-z0-9_]*$` | **PASSED** |
-| 4 | `test_04_all_length_and_count_boundaries` | Enforce api_name (1..64), surfaces (1..12), path, contracts, 12K size cap | **PASSED** |
-| 5 | `test_05_boolean_as_integer_rejection` | Reject `bool` instances for all numeric arguments | **PASSED** |
-| 6 | `test_06_url_and_sha_validation` | Enforce HTTPS protocol and exact 64-hex SHA-256 strings | **PASSED** |
-| 7 | `test_07_owner_authorization` | Enforce owner-only execution on baseline, propose, and cancel | **PASSED** |
-| 8 | `test_08_one_pending_proposal_only` | Disallow overlapping proposals while one is pending | **PASSED** |
-| 9 | `test_09_cancellation` | Owner cancellation before review clears state and logs CANCELLED | **PASSED** |
-| 10 | `test_10_permissionless_expiry` | Permissionless expiry strictly after deadline logs EXPIRED | **PASSED** |
-| 11 | `test_11_resolve_forbidden_after_deadline` | Revert `review_release` after deadline has passed | **PASSED** |
-| 12 | `test_12_candidate_hash_mismatch` | Revert consensus when fetched body hash does not match expected SHA | **PASSED** |
-| 13 | `test_13_fetch_failure` | Revert consensus on non-200 HTTP responses | **PASSED** |
-| 14 | `test_14_removed_surface_is_deterministically_breaking` | Detect removed surface as BREAKING; reject minor bump | **PASSED** |
-| 15 | `test_15_method_change_is_breaking` | Detect HTTP method modification as BREAKING | **PASSED** |
-| 16 | `test_16_path_change_is_breaking` | Detect endpoint path modification as BREAKING | **PASSED** |
-| 17 | `test_17_semantic_breaking_with_patch_is_rejected` | Semantic contract break requires major bump; reject patch | **PASSED** |
-| 18 | `test_18_semantic_breaking_with_major_bump_is_accepted` | Semantic contract break accepted with major bump | **PASSED** |
-| 19 | `test_19_additive_surface_with_patch_is_rejected` | Additive surface requires at least minor bump; reject patch | **PASSED** |
-| 20 | `test_20_additive_surface_with_minor_bump_is_accepted` | Additive surface accepted with minor bump | **PASSED** |
-| 21 | `test_21_compatible_change_with_patch_is_accepted` | Purely compatible modification accepted with patch bump | **PASSED** |
-| 22 | `test_22_unclear_rejects_and_leaves_baseline_unchanged` | UNCLEAR classification rejects proposal regardless of bump | **PASSED** |
-| 23 | `test_23_missing_status_id_is_rejected` | Reject model output if any common surface ID is omitted | **PASSED** |
-| 24 | `test_24_invented_status_id_is_rejected` | Reject model output if hallucinated or unknown surface ID is returned | **PASSED** |
-| 25 | `test_25_duplicate_statuses_rejected_and_unsorted_statuses_canonicalized` | Reject duplicate IDs; canonicalize unsorted entries alphabetically | **PASSED** |
-| 26 | `test_26_prompt_injection_text_cannot_add_ids_or_control_outcome` | Resist prompt injections attempting system override or ID tampering | **PASSED** |
-| 27 | `test_27_rejected_proposal_does_not_change_canonical_manifest` | Rejection preserves canonical baseline and version | **PASSED** |
-| 28 | `test_28_accepted_proposal_atomically_replaces_canonical_manifest` | Acceptance atomically updates canonical manifest and version tuple | **PASSED** |
-| 29 | `test_29_second_review_cannot_repeat_the_state_transition` | Revert repeat review calls once status returns to READY | **PASSED** |
-| 30 | `test_30_history_cap_and_proposal_bounds` | Bound history to maximum 10 items (FIFO eviction) | **PASSED** |
-| 31 | `test_31_recomputed_history_result_matches_stored_terminal_result` | Pure re-derivation confirms exact deterministic agreement | **PASSED** |
-| 32 | `test_32_model_schema_top_level_extra_keys_adversarial` | Adversarial test: reject model responses with top-level extra keys | **PASSED** |
-| 33 | `test_33_model_schema_item_level_extra_keys_adversarial` | Adversarial test: reject model responses with item-level extra keys | **PASSED** |
-| 34 | `test_34_zero_owner_address_rejected` | Rejection of zero address owner in constructor | **PASSED** |
-| 35 | `test_35_version_component_upper_bounds` | Version component upper bound enforcement (<= 1,000,000) | **PASSED** |
-| 36 | `test_36_timestamp_failure_cannot_create_zero_based_deadline` | Fail closed on timestamp failure without setting zero-based deadline | **PASSED** |
-| 37 | `test_37_history_recomputation_comprehensive_matrix` | Comprehensive matrix for breaking/additive/compatible transitions | **PASSED** |
-| 38 | `test_38_recomputation_survives_subsequent_canonical_version_advances` | Recomputation determinism persists across subsequent version advances | **PASSED** |
+| **Compatible Patch** | `fixtures/v1.0.1-compatible.json` | `5d1c3fe497e44fc95a704e7ae49fb0c99a4af0b6b99fa12afdef0a959681701c` | [v1.0.1-compatible.json](https://raw.githubusercontent.com/edwarderlick/ApiSeal/c5f6a834bb6ff51f63862b660389e4e795290a05/fixtures/v1.0.1-compatible.json) |
+| **Additive Minor** | `fixtures/v1.0.1-additive.json` | `1c7d2fe54ae97fea4d82cbb112a243f8e16e10a2ff84430bfbdce3c75ecde888` | [v1.0.1-additive.json](https://raw.githubusercontent.com/edwarderlick/ApiSeal/c5f6a834bb6ff51f63862b660389e4e795290a05/fixtures/v1.0.1-additive.json) |
+| **Breaking Reference** | `fixtures/v2.0.0-breaking.json` | `5741ab9a04bfe5f418d7590d2c9825e2d8ddc89a6438c0927c3d32d7496a5073` | Reference example |
 
 ---
 
-## TypeScript Build & Scripts Verification
+## Final Verification Checklist
 
-1. **Typecheck**:
-   ```bash
-   npx tsc --noEmit
-   ```
-   Result: **PASSED (0 errors)**
-
-2. **Cross-Platform Script Execution Verification**:
-   - **Windows PowerShell / CMD (Local Execution)**:
-     - `npm run deploy:studio-dev` (without private key): Visibly executes and fails with `ERROR: No private key provided. Set GENLAYER_PRIVATE_KEY or PRIVATE_KEY env variable.` (Exit code: 1).
-     - `npm run verify:onchain` (without address): Visibly executes and fails with `ERROR: No contract address provided.` (Exit code: 1).
-     - Neither command silently exits 0 on Windows.
-   - **Ubuntu Linux (Public CI Execution)**:
-     - TypeScript compilation passed without errors (`npx tsc --noEmit`).
-     - Guarded fail-closed execution verified in CI workflow for `npm run deploy:studio-dev` and `npm run verify:onchain`.
-
-3. **Fee Estimation & Deployment Address Extraction**:
-   - Deployment script explicitly calls `client.estimateTransactionFees()` and passes `{ distribution, feeValue, messageAllocations }` into `client.deployContract(...)`.
-   - Extraction authoritatively resolves `receipt.txDataDecoded?.contractAddress`, with carefully guarded receipt fallbacks.
-   - Script appends deployment records to `evidence/studio-dev.md` when finalized.
-
----
-
-## Canonical Local Fixtures & Live Integration Specification
-
-### Canonical Local Fixtures (`fixtures/`)
-All fixtures are stored as byte-for-byte canonical compact JSON (`sort_keys=True, separators=(",", ":")` with no trailing whitespace or extra newlines):
-- `fixtures/v1.0.1-compatible.json` (SHA-256: `5d1c3fe497e44fc95a704e7ae49fb0c99a4af0b6b99fa12afdef0a959681701c`): Canonical compact JSON specifying backward-compatible updates to `create_charge` (used in live tests 01 and 04).
-- `fixtures/v1.0.1-additive.json` (SHA-256: `1c7d2fe54ae97fea4d82cbb112a243f8e16e10a2ff84430bfbdce3c75ecde888`): Canonical compact JSON introducing additive `/refunds` endpoint (`refund_charge`, used in live test 02).
-- `fixtures/v2.0.0-breaking.json` (SHA-256: `5741ab9a04bfe5f418d7590d2c9825e2d8ddc89a6438c0927c3d32d7496a5073`): Canonical compact JSON introducing breaking `/v2/charges` path change (offline reference example fixture only; non-live and not claimed as live proof).
-
-### Live Integration Test Suite Requirements
-The test suite in [`tests/integration/test_apiseal_live.py`](../tests/integration/test_apiseal_live.py) contains 4 end-to-end tests:
-1. `test_integration_01_accepted_compatible_release`: Validates multi-validator consensus on compatible candidate promotion.
-2. `test_integration_02_rejected_insufficient_version`: Validates deterministic rejection when an additive surface (`refund_charge`) is paired with an insufficient patch bump (1.0.1).
-3. `test_integration_03_hash_mismatch_or_fetch_failure`: Validates fail-closed transaction revert on SHA mismatch / 404 fetch failure.
-4. `test_integration_04_repeat_review_revert`: Validates revert on repeat review calls when state is no longer pending.
-
-#### 1. Explicit Opt-In Guard (`APISEAL_RUN_LIVE_TESTS=1`)
-Every test in `tests/integration/test_apiseal_live.py` includes an autouse fixture:
-```python
-if os.environ.get("APISEAL_RUN_LIVE_TESTS") != "1":
-    pytest.skip(...)
-```
-Without `APISEAL_RUN_LIVE_TESTS=1`, all 4 tests unconditionally skip before deploying any contract or submitting any transactions.
-
-#### 2. Byte-for-Byte Authoritative Fixtures
-The `load_authoritative_fixture(fixture_name)` helper loads the local canonical JSON fixture from `fixtures/` as raw UTF-8 text, validates that `raw_text == json.dumps(parsed, sort_keys=True, separators=(",", ":"))`, and computes `candidate_sha256` from those exact bytes.
-When `APISEAL_RUN_LIVE_TESTS=1` is set, tests require commit-pinned public URLs serving identical bytes:
-- `APISEAL_LIVE_COMPATIBLE_FIXTURE_URL`: Required for Test 01 and Test 04 (matching `fixtures/v1.0.1-compatible.json`).
-- `APISEAL_LIVE_ADDITIVE_FIXTURE_URL`: Required for Test 02 (matching `fixtures/v1.0.1-additive.json`).
-- If either variable is absent during live execution, the corresponding test skips with an explicit message.
-
-#### 3. Verified Immutable Public Fixture Proofs
-- **Commit SHA**: `c5f6a834bb6ff51f63862b660389e4e795290a05`
-- **Compatible Fixture URL**: `https://raw.githubusercontent.com/edwarderlick/ApiSeal/c5f6a834bb6ff51f63862b660389e4e795290a05/fixtures/v1.0.1-compatible.json`
-  - Byte count: `542` bytes
-  - Computed SHA-256: `5d1c3fe497e44fc95a704e7ae49fb0c99a4af0b6b99fa12afdef0a959681701c`
-  - Byte-for-byte equality verified: **PASS**
-- **Additive Fixture URL**: `https://raw.githubusercontent.com/edwarderlick/ApiSeal/c5f6a834bb6ff51f63862b660389e4e795290a05/fixtures/v1.0.1-additive.json`
-  - Byte count: `712` bytes
-  - Computed SHA-256: `1c7d2fe54ae97fea4d82cbb112a243f8e16e10a2ff84430bfbdce3c75ecde888`
-  - Byte-for-byte equality verified: **PASS**
-
----
-
-## Pre-Deployment Verification Summary
-
-- [x] 38 direct unit tests passing locally and in public CI (`pytest tests/direct/test_apiseal.py`).
-- [x] AST safety validation passed locally and in CI (`genvm-lint check contracts/apiseal.py`).
-- [x] ABI schema validation and byte-for-byte parity passed locally and in CI (`genvm-lint schema`).
-- [x] TypeScript compilation passed locally and in CI (`npx tsc --noEmit`).
-- [x] Integration test suite skipped safely without live opt-in (`pytest tests/integration/test_apiseal_live.py`).
-- [x] Public GitHub Actions CI workflow passed ([run #39100985057](https://github.com/edwarderlick/ApiSeal/actions/runs/39100985057), commit `57072c75d2bce74e9f7aa00f19f3a23fca264540`).
-- [x] Guarded fail-closed script execution verified on Windows (locally) and Ubuntu Linux (CI).
-- [x] Real fee estimation and authoritative `txDataDecoded` address extraction implemented.
-- [x] Canonical source SHA-256 computed: `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`.
-- [ ] Deployed-source parity — pending deployment and successful `getContractCode` byte-for-byte comparison.
-- [x] No deployment and zero live transactions executed (Phase A complete; live integration and deployment pending).
+- [x] **Zero gltest internal monkey patches**: All private `gltest` hooks removed; pure public `genlayer-js` APIs used for live execution.
+- [x] **Disposable Canary Executed & Passed**: Verified `gl.nondet.web.get`, `gl.nondet.exec_prompt`, and `gl.vm.run_nondet` with terminal consensus.
+- [x] **All 4 Live Integration Scenarios Passed**: Full consensus lifecycle proven for compatible release, insufficient bump rejection, hash mismatch revert, and repeated review prevention.
+- [x] **Canonical Contract Deployed**: Address `0xA631C30A79e69695a8d17D21F4F2497Ff52522A4`.
+- [x] **Deployed-Source Parity Proven**: Byte-for-byte exact match verified on-chain via `gen_getContractCode`.
+- [x] **No Secrets Exposed**: Resolved via autonomous OS keychain with best-effort reference cleanup; zero keys printed or committed.
+- [x] **GenLayer Portal Statement**: **The GenLayer Portal submission has NOT yet been performed.** The repository is published, fully verified, and ready for steward review and subsequent portal submission.

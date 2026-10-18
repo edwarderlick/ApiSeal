@@ -50,6 +50,7 @@ async function verifyOnChain(): Promise<void> {
 
   // 3. Connect to GenLayer Studio Devnet
   const client = createClient({
+    endpoint: "https://studio-dev.genlayer.com/api",
     chain: studioDevnet,
   });
 

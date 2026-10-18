@@ -30,54 +30,6 @@ import pytest
 
 from gltest import get_contract_factory, create_account
 from gltest.assertions import tx_execution_succeeded, tx_execution_failed
-import gltest.artifacts.contract as _gl_contract_art
-
-# Ensure gltest AST inspector recognizes Contract base when imported directly
-_orig_is_base = _gl_contract_art._is_genlayer_contract_base
-
-
-def _supported_is_base(base):
-    path = _gl_contract_art._attribute_path(base)
-    return (
-        path in (["gl", "contract", "Contract"], ["gl", "Contract"], ["Contract"])
-        or _orig_is_base(base)
-    )
-
-
-_gl_contract_art._is_genlayer_contract_base = _supported_is_base
-
-import gltest.contracts.contract_factory as _gl_cf
-import gltest.contracts.contract as _gl_contract
-
-_orig_cf_fee = _gl_cf._fee_kwargs
-
-
-def _live_fee_kwargs(call, fees, fee_value):
-    if fees is None:
-        try:
-            from gltest import get_gl_client
-
-            client = get_gl_client()
-            est = client.estimate_transaction_fees()
-            fees = est
-            fee_value = est.get("fee_value") or est.get("feeValue")
-        except Exception:
-            pass
-    elif isinstance(fees, dict) and "feeValue" not in fees and "fee_value" not in fees:
-        try:
-            from gltest import get_gl_client
-
-            client = get_gl_client()
-            est = client.estimate_transaction_fees()
-            fees = {**est, **fees}
-            fee_value = fee_value or est.get("fee_value") or est.get("feeValue")
-        except Exception:
-            pass
-    return _orig_cf_fee(call, fees, fee_value)
-
-
-_gl_cf._fee_kwargs = _live_fee_kwargs
-_gl_contract._fee_kwargs = _live_fee_kwargs
 
 
 def load_authoritative_fixture(fixture_name: str) -> tuple[str, str]:

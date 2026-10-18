@@ -24,7 +24,7 @@ import pytest
 from gltest import get_contract_factory
 from tests.integration.test_apiseal_live import get_live_signer
 
-CANONICAL_HASH = "d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587"
+CANONICAL_HASH = "0ce6c6c3a5d5dc4dc00411ce35dcc89a15c197f8d79e02cd01b22dccbb45c602"
 SAMPLE_KEY = "0x" + "ab" * 32
 SAMPLE_ADDR = "0x98522369C9e1B9fEE4F8c5384B29a0088537537b"
 

@@ -1,8 +1,4 @@
-# {
-#   "Seq": [
-#     { "Depends": "py-genlayer:babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0" }
-#   ]
-# }
+# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 """
 ApiSeal: Bounded Semantic-Version Release Registry for Public APIs.
 
@@ -14,7 +10,10 @@ import json
 import re
 import hashlib
 import genlayer as gl
-from genlayer import Contract, Address, u256
+
+Address = gl.Address
+u256 = gl.u256
+
 
 
 # Maximum allowed length of a canonical manifest JSON string
@@ -346,7 +345,7 @@ The "statuses" array MUST contain an entry for each ID in {sorted(common_ids)} i
     return prompt
 
 
-class ApiSeal(Contract):
+class ApiSeal(gl.contract.Contract):
     """GenLayer Intelligent Contract for Bounded Semantic-Version Release Registry."""
 
     owner: Address

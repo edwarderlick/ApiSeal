@@ -10,6 +10,8 @@
     "test:direct": "pytest tests/direct -v",
     "test:integration": "pytest tests/integration/test_apiseal_live.py -v",
     "test:integration:live": "tsx deploy/run_live_integration.ts",
+    "canary": "tsx deploy/run_canary.ts",
+    "smoke:read": "tsx deploy/smoke_read.ts",
     "deploy:studio-dev": "tsx deploy/deployScript.ts",
     "verify:onchain": "tsx deploy/verify_onchain.ts"
   },
