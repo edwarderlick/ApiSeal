@@ -218,6 +218,17 @@ When `APISEAL_RUN_LIVE_TESTS=1` is set, tests require commit-pinned public URLs 
 - `APISEAL_LIVE_ADDITIVE_FIXTURE_URL`: Required for Test 02 (matching `fixtures/v1.0.1-additive.json`).
 - If either variable is absent during live execution, the corresponding test skips with an explicit message.
 
+#### 3. Verified Immutable Public Fixture Proofs
+- **Commit SHA**: `c5f6a834bb6ff51f63862b660389e4e795290a05`
+- **Compatible Fixture URL**: `https://raw.githubusercontent.com/edwarderlick/ApiSeal/c5f6a834bb6ff51f63862b660389e4e795290a05/fixtures/v1.0.1-compatible.json`
+  - Byte count: `542` bytes
+  - Computed SHA-256: `5d1c3fe497e44fc95a704e7ae49fb0c99a4af0b6b99fa12afdef0a959681701c`
+  - Byte-for-byte equality verified: **PASS**
+- **Additive Fixture URL**: `https://raw.githubusercontent.com/edwarderlick/ApiSeal/c5f6a834bb6ff51f63862b660389e4e795290a05/fixtures/v1.0.1-additive.json`
+  - Byte count: `712` bytes
+  - Computed SHA-256: `1c7d2fe54ae97fea4d82cbb112a243f8e16e10a2ff84430bfbdce3c75ecde888`
+  - Byte-for-byte equality verified: **PASS**
+
 ---
 
 ## Pre-Deployment Verification Summary
