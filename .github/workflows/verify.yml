@@ -32,7 +32,7 @@ jobs:
         id: genvm-cache
         with:
           path: ~/.cache/genvm-linter
-          key: genvm-v0.6.0-rc9-sdk-runners-v2
+          key: genvm-v0.6.0-rc9-sdk-runners-v3
 
       - name: Install Python dependencies
         run: |
@@ -75,18 +75,42 @@ jobs:
                   # Extract py-genlayer runner zip
                   m1 = outer_tar.getmember('runners/py-genlayer/ba/bwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0.zip')
                   f1 = outer_tar.extractfile(m1)
+                  raw_zip1 = f1.read()
                   py_genlayer_dir.mkdir(parents=True, exist_ok=True)
-                  with zipfile.ZipFile(f1) as zf1:
+                  with zipfile.ZipFile(io.BytesIO(raw_zip1)) as zf1:
                       zf1.extractall(py_genlayer_dir)
 
                   # Extract py-lib-genlayer-std runner zip
                   m2 = outer_tar.getmember('runners/py-lib-genlayer-std/z7/fv8bqpetj3wnjd8sn5s5xfqve3rz8nmtq4npwf2qdvns57zjgg.zip')
                   f2 = outer_tar.extractfile(m2)
+                  raw_zip2 = f2.read()
                   py_lib_dir.mkdir(parents=True, exist_ok=True)
-                  with zipfile.ZipFile(f2) as zf2:
+                  with zipfile.ZipFile(io.BytesIO(raw_zip2)) as zf2:
                       zf2.extractall(py_lib_dir)
 
               print('GenVM v0.6.0-rc9 runners extracted successfully.')
+          EOF
+
+      - name: Debug runner cache and SDK import
+        run: |
+          python - << 'EOF'
+          import sys, traceback
+          from pathlib import Path
+
+          cache_dir = Path.home() / '.cache' / 'genvm-linter'
+          print("=== Cache contents ===")
+          files = [p for p in cache_dir.rglob('*') if p.is_file()]
+          print(f"Total files in cache: {len(files)}")
+          for p in files[:20]:
+              print(p.relative_to(cache_dir), p.stat().st_size)
+
+          from genvm_linter.validate.sdk_loader import load_sdk
+          try:
+              get_schema, notes = load_sdk(Path('contracts/apiseal.py'))
+              print("=== SDK LOADED SUCCESSFULLY ===", get_schema)
+          except Exception:
+              traceback.print_exc()
+              sys.exit(1)
           EOF
 
       - name: Lint and validate contract AST
