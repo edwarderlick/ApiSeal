@@ -94,7 +94,53 @@ jobs:
               (py_shim / '__init__.py').write_text('')
               (py_shim / 'get_schema.py').write_text('from genlayer._internal.get_schema import *\n')
 
+              import subprocess
+              subprocess.run(['chmod', '-R', '755', str(cache_dir)], check=False)
+
               print('GenVM v0.6.0-rc9 runners extracted successfully.')
+          EOF
+
+      - name: Diagnose contract import
+        run: |
+          python - << 'EOF'
+          import os, sys, traceback
+          from pathlib import Path
+          from unittest.mock import MagicMock
+
+          ext_base = Path.home() / '.cache' / 'genvm-linter' / 'extracted' / 'genlayerlabs-genvm-manager-v0.6.0-rc9.tar'
+          std_dir = ext_base / 'py-lib-genlayer-std' / 'z7fv8bqpetj3wnjd8sn5s5xfqve3rz8nmtq4npwf2qdvns57zjgg'
+          sys.path.insert(0, str(std_dir))
+
+          os.environ["GENERATING_DOCS"] = "true"
+          sys.modules["_genlayer_wasi"] = MagicMock()
+
+          print("--- Step 1: import genlayer.contract ---")
+          try:
+              import genlayer.contract
+              print("genlayer.contract:", genlayer.contract)
+              print("has Contract in genlayer.contract:", hasattr(genlayer.contract, 'Contract'))
+          except Exception:
+              traceback.print_exc()
+
+          print("--- Step 2: import genlayer ---")
+          try:
+              import genlayer
+              print("genlayer:", genlayer)
+              print("has Contract in genlayer:", hasattr(genlayer, 'Contract'))
+          except Exception:
+              traceback.print_exc()
+
+          print("--- Step 3: from genlayer import Contract, Address, u256 ---")
+          try:
+              from genlayer import Contract, Address, u256
+              print("Import successful! Contract:", Contract)
+          except Exception:
+              traceback.print_exc()
+
+          from genvm_linter.validate import validate_contract
+          print("--- Step 4: validate_contract ---")
+          val = validate_contract(Path('contracts/apiseal.py'))
+          print("validate_contract ok:", val.ok, "errors:", val.errors)
           EOF
 
       - name: Lint and validate contract AST
