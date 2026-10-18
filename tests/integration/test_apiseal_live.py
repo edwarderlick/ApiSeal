@@ -30,6 +30,21 @@ import pytest
 
 from gltest import get_contract_factory, create_account
 from gltest.assertions import tx_execution_succeeded, tx_execution_failed
+import gltest.artifacts.contract as _gl_contract_art
+
+# Ensure gltest AST inspector recognizes Contract base when imported directly
+_orig_is_base = _gl_contract_art._is_genlayer_contract_base
+
+
+def _supported_is_base(base):
+    path = _gl_contract_art._attribute_path(base)
+    return (
+        path in (["gl", "contract", "Contract"], ["gl", "Contract"], ["Contract"])
+        or _orig_is_base(base)
+    )
+
+
+_gl_contract_art._is_genlayer_contract_base = _supported_is_base
 
 
 def load_authoritative_fixture(fixture_name: str) -> tuple[str, str]:
@@ -155,15 +170,7 @@ def contract_factory():
             "Live network integration tests require explicit opt-in via APISEAL_RUN_LIVE_TESTS=1. "
             "Skipping test before contract deployment or transaction submission."
         )
-    contract_file = Path(__file__).resolve().parent.parent.parent / "contracts" / "apiseal.py"
-    try:
-        return get_contract_factory(contract_file_path=contract_file)
-    except Exception:
-        from gltest.contracts.contract_factory import ContractFactory
-        return ContractFactory(
-            contract_name="ApiSeal",
-            contract_code=contract_file.read_text(encoding="utf-8"),
-        )
+    return get_contract_factory("ApiSeal")
 
 
 def test_integration_01_accepted_compatible_release(contract_factory, live_signer):

@@ -26,6 +26,7 @@ import { fileURLToPath } from "node:url";
 import { createClient, createAccount, isSuccessful } from "genlayer-js";
 import type { TransactionFeeOptions } from "genlayer-js/types";
 import { studioDevnet } from "genlayer-js/chains";
+import { resolveSigner } from "./signer.js";
 
 interface DeploymentReceipt {
   network: string;
@@ -52,15 +53,12 @@ async function main(): Promise<void> {
   const sourceSha256 = crypto.createHash("sha256").update(contractSource).digest("hex");
   console.log(`[1] Contract source hash: ${sourceSha256}`);
 
-  // Ensure private key is provided via environment
-  const privateKey = process.env.GENLAYER_PRIVATE_KEY || process.env.PRIVATE_KEY;
-  if (!privateKey) {
-    console.error("ERROR: No private key provided. Set GENLAYER_PRIVATE_KEY or PRIVATE_KEY env variable.");
-    console.error("Never hardcode private keys into source code or config files.");
-    process.exit(1);
-  }
-
-  const account = createAccount(privateKey.startsWith("0x") ? (privateKey as `0x${string}`) : `0x${privateKey}`);
+  // Resolve deployer account from GenLayer CLI OS keychain (coverlock-submitter)
+  const signer = await resolveSigner({
+    accountName: "coverlock-submitter",
+    checkBalance: true,
+  });
+  const account = signer.account;
   console.log(`[2] Deployer account address: ${account.address}`);
 
   // Create GenLayer client targeting studioDevnet (61997)

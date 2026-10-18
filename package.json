@@ -7,8 +7,9 @@
   "scripts": {
     "lint:contract": "genvm-lint check contracts/apiseal.py",
     "schema": "genvm-lint schema -o deploy/schema.json --json contracts/apiseal.py",
-    "test:direct": "pytest tests/direct/test_apiseal.py -v",
+    "test:direct": "pytest tests/direct -v",
     "test:integration": "pytest tests/integration/test_apiseal_live.py -v",
+    "test:integration:live": "tsx deploy/run_live_integration.ts",
     "deploy:studio-dev": "tsx deploy/deployScript.ts",
     "verify:onchain": "tsx deploy/verify_onchain.ts"
   },

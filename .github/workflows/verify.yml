@@ -116,7 +116,7 @@ jobs:
           diff -u deploy/schema.json /tmp/schema_check/schema.json
 
       - name: Run direct contract unit tests
-        run: pytest tests/direct/test_apiseal.py -q
+        run: pytest tests/direct -q
 
       - name: Verify integration suite skips cleanly without live opt-in
         run: pytest tests/integration/test_apiseal_live.py -q
