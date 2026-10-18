@@ -1,0 +1,24 @@
+{
+  "name": "apiseal",
+  "version": "1.0.0",
+  "description": "Bounded Semantic-Version Release Registry for Public APIs on GenLayer",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "lint:contract": "genvm-lint check contracts/apiseal.py",
+    "schema": "genvm-lint schema -o deploy/schema.json --json contracts/apiseal.py",
+    "test:direct": "pytest tests/direct/test_apiseal.py -v",
+    "test:integration": "pytest tests/integration/test_apiseal_live.py -v",
+    "deploy:studio-dev": "tsx deploy/deployScript.ts",
+    "verify:onchain": "tsx deploy/verify_onchain.ts"
+  },
+  "dependencies": {
+    "genlayer-js": "2.0.0-rc.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,140 @@
+{
+  "ctor": {
+    "params": [
+      [
+        "owner",
+        "address"
+      ],
+      [
+        "project_id",
+        "string"
+      ],
+      [
+        "review_window_seconds",
+        "int"
+      ]
+    ],
+    "kwparams": {}
+  },
+  "methods": {
+    "cancel_proposal": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "expire_proposal": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "get_config": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_current_release": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_history": {
+      "params": [
+        [
+          "index",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_history_count": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_pending_proposal": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "propose_release": {
+      "params": [
+        [
+          "candidate_url",
+          "string"
+        ],
+        [
+          "candidate_sha256",
+          "string"
+        ],
+        [
+          "major",
+          "int"
+        ],
+        [
+          "minor",
+          "int"
+        ],
+        [
+          "patch",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "recompute_history_result": {
+      "params": [
+        [
+          "index",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "register_baseline": {
+      "params": [
+        [
+          "manifest_json",
+          "string"
+        ],
+        [
+          "major",
+          "int"
+        ],
+        [
+          "minor",
+          "int"
+        ],
+        [
+          "patch",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "review_release": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    }
+  }
+}

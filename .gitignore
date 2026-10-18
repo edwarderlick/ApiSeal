@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments and credentials - NEVER COMMIT KEYS OR SECRETS
+.env
+.env.*
+*.key
+*.pem
+private_key*
+id_rsa*
+secrets.json
+
+# Ephemeral deployment transaction state
+deploy/pending_tx.json
+
+# Dependencies
+node_modules/
+.venv/
+env/
+venv/
+ENV/
+
+# GenLayer artifacts, test runners, and test coverage
+artifacts/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.cache/
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Agent, scratch, and temporary log files
+.agents/
+.gemini/
+.antigravity/
+scratch/
+*.log
