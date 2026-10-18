@@ -28,7 +28,7 @@ import os
 from pathlib import Path
 import pytest
 
-from gltest import get_contract_factory, create_account, get_default_account
+from gltest import get_contract_factory, create_account
 from gltest.assertions import tx_execution_succeeded, tx_execution_failed
 
 
@@ -93,6 +93,48 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def get_live_signer():
+    """
+    Construct the live signer account from GENLAYER_PRIVATE_KEY.
+
+    Evaluated ONLY after APISEAL_RUN_LIVE_TESTS=1 opt-in.
+    Never logs or exposes the private key value.
+    Fails with a clear diagnostic message if the environment variable is absent or empty.
+    """
+    private_key = os.environ.get("GENLAYER_PRIVATE_KEY") or os.environ.get("PRIVATE_KEY")
+    if not private_key or not private_key.strip():
+        pytest.fail(
+            "Live network execution requires GENLAYER_PRIVATE_KEY or PRIVATE_KEY env variable. "
+            "Set privately in your environment before running live tests."
+        )
+
+    key_clean = private_key.strip()
+    raw_hex = key_clean[2:] if key_clean.startswith(("0x", "0X")) else key_clean
+
+    if len(raw_hex) != 64 or not all(c in "0123456789abcdefABCDEF" for c in raw_hex):
+        pytest.fail(
+            "Invalid GENLAYER_PRIVATE_KEY format: expected a 64-character hex string. "
+            "Never paste private keys into public forums or chat."
+        )
+
+    try:
+        account = create_account(key_clean)
+        print(f"\n[live-signer] Initialized live deployer account: {account.address}")
+        return account
+    except Exception as e:
+        pytest.fail(f"Failed to initialize live signer account: {type(e).__name__}")
+
+
+@pytest.fixture
+def live_signer():
+    """
+    Guarded live signer fixture.
+    Evaluated only after APISEAL_RUN_LIVE_TESTS=1 opt-in.
+    Fails clearly before deployment if GENLAYER_PRIVATE_KEY is absent.
+    """
+    return get_live_signer()
+
+
 @pytest.fixture(autouse=True)
 def require_live_opt_in():
     """
@@ -114,10 +156,17 @@ def contract_factory():
             "Skipping test before contract deployment or transaction submission."
         )
     contract_file = Path(__file__).resolve().parent.parent.parent / "contracts" / "apiseal.py"
-    return get_contract_factory(contract_file_path=contract_file)
+    try:
+        return get_contract_factory(contract_file_path=contract_file)
+    except Exception:
+        from gltest.contracts.contract_factory import ContractFactory
+        return ContractFactory(
+            contract_name="ApiSeal",
+            contract_code=contract_file.read_text(encoding="utf-8"),
+        )
 
 
-def test_integration_01_accepted_compatible_release(contract_factory):
+def test_integration_01_accepted_compatible_release(contract_factory, live_signer):
     """
     Scenario 1: Accepted compatible release workflow.
     - Owner registers baseline manifest v1.0.0 for Payment Gateway API.
@@ -136,7 +185,7 @@ def test_integration_01_accepted_compatible_release(contract_factory):
     cand_json, cand_sha = load_authoritative_fixture("v1.0.1-compatible.json")
     base_json = make_baseline_manifest()
 
-    owner = get_default_account()
+    owner = live_signer
     contract = contract_factory.deploy(
         args=[owner.address, "api.payments.core", 86400],
         account=owner,
@@ -168,7 +217,7 @@ def test_integration_01_accepted_compatible_release(contract_factory):
     assert curr_after["canonical_manifest_sha256"] == cand_sha
 
 
-def test_integration_02_rejected_insufficient_version(contract_factory):
+def test_integration_02_rejected_insufficient_version(contract_factory, live_signer):
     """
     Scenario 2: Rejected release due to insufficient version bump.
     - Baseline is v1.0.0 for Payment Gateway API (create_charge, get_charge).
@@ -187,7 +236,7 @@ def test_integration_02_rejected_insufficient_version(contract_factory):
     cand_json, cand_sha = load_authoritative_fixture("v1.0.1-additive.json")
     base_json = make_baseline_manifest()
 
-    owner = get_default_account()
+    owner = live_signer
     contract = contract_factory.deploy(
         args=[owner.address, "api.payments.core", 86400],
         account=owner,
@@ -212,7 +261,7 @@ def test_integration_02_rejected_insufficient_version(contract_factory):
     assert contract.get_history(args=[0]).call()["terminal_result"] == "REJECTED"
 
 
-def test_integration_03_hash_mismatch_or_fetch_failure(contract_factory):
+def test_integration_03_hash_mismatch_or_fetch_failure(contract_factory, live_signer):
     """
     Scenario 3: Hash mismatch or network fetch failure path.
     - Candidate URL fails or body hash does not match declared SHA-256.
@@ -220,7 +269,7 @@ def test_integration_03_hash_mismatch_or_fetch_failure(contract_factory):
     """
     base_json = make_baseline_manifest()
 
-    owner = get_default_account()
+    owner = live_signer
     contract = contract_factory.deploy(
         args=[owner.address, "api.payments.core", 86400],
         account=owner,
@@ -243,7 +292,7 @@ def test_integration_03_hash_mismatch_or_fetch_failure(contract_factory):
     assert config["status"] == "PENDING"
 
 
-def test_integration_04_repeat_review_revert(contract_factory):
+def test_integration_04_repeat_review_revert(contract_factory, live_signer):
     """
     Scenario 4: Re-review revert check.
     - Baseline and compatible fixture belong to the same Payment Gateway API.
@@ -260,7 +309,7 @@ def test_integration_04_repeat_review_revert(contract_factory):
     cand_json, cand_sha = load_authoritative_fixture("v1.0.1-compatible.json")
     base_json = make_baseline_manifest()
 
-    owner = get_default_account()
+    owner = live_signer
     contract = contract_factory.deploy(
         args=[owner.address, "api.payments.core", 86400],
         account=owner,

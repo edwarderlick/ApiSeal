@@ -8,8 +8,6 @@ networks:
     url: "https://studio-dev.genlayer.com/api"
     id: 61997
     chain_type: "studio_devnet"
-    accounts:
-      - "0x1111111111111111111111111111111111111111"
     default_wait_interval: 3000
     default_wait_retries: 50
     leader_only: false
@@ -18,8 +16,6 @@ networks:
     url: "http://127.0.0.1:4000/api"
     id: 61127
     chain_type: "localnet"
-    accounts:
-      - "0x1111111111111111111111111111111111111111"
     default_wait_interval: 1000
     default_wait_retries: 30
     leader_only: false
