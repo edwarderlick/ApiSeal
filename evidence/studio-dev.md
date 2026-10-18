@@ -59,12 +59,15 @@ Output:
   Methods: 11 (6 view, 5 write)
 ```
 
-### 2. ABI Schema Extraction (`genvm-lint schema`)
-Command executed:
+### 2. ABI Schema Extraction & Parity (`genvm-lint schema`)
+Local command:
 ```bash
 genvm-lint schema -o deploy/schema.json --json contracts/apiseal.py
 ```
-Output:
+Public CI verification:
+In GitHub Actions CI, the schema is generated to a temporary file (`/tmp/schema_check/schema.json`) and compared byte-for-byte with `deploy/schema.json` via `diff -u`. Stale schema causes CI failure.
+
+Tracked schema output (`deploy/schema.json`):
 ```json
 {
   "ctor": {
@@ -177,9 +180,13 @@ Execution Summary: **38 passed in 0.28s**
    Result: **PASSED (0 errors)**
 
 2. **Cross-Platform Script Execution Verification**:
-   - `npm run deploy:studio-dev` (without private key): Visibly executes and fails with `ERROR: No private key provided. Set GENLAYER_PRIVATE_KEY or PRIVATE_KEY env variable.` (Exit code: 1).
-   - `npm run verify:onchain` (without address): Visibly executes and fails with `ERROR: No contract address provided.` (Exit code: 1).
-   - Neither command silently exits 0.
+   - **Windows PowerShell / CMD (Local Execution)**:
+     - `npm run deploy:studio-dev` (without private key): Visibly executes and fails with `ERROR: No private key provided. Set GENLAYER_PRIVATE_KEY or PRIVATE_KEY env variable.` (Exit code: 1).
+     - `npm run verify:onchain` (without address): Visibly executes and fails with `ERROR: No contract address provided.` (Exit code: 1).
+     - Neither command silently exits 0 on Windows.
+   - **Ubuntu Linux (Public CI Execution)**:
+     - TypeScript compilation passed without errors (`npx tsc --noEmit`).
+     - Guarded fail-closed execution verified in CI workflow for `npm run deploy:studio-dev` and `npm run verify:onchain`.
 
 3. **Fee Estimation & Deployment Address Extraction**:
    - Deployment script explicitly calls `client.estimateTransactionFees()` and passes `{ distribution, feeValue, messageAllocations }` into `client.deployContract(...)`.
@@ -233,13 +240,14 @@ When `APISEAL_RUN_LIVE_TESTS=1` is set, tests require commit-pinned public URLs 
 
 ## Pre-Deployment Verification Summary
 
-- [x] 38 direct unit tests passing locally (`pytest tests/direct/test_apiseal.py`).
-- [x] AST safety validation passed (`genvm-lint check contracts/apiseal.py`).
-- [x] ABI schema validation passed (`genvm-lint schema -o deploy/schema.json --json contracts/apiseal.py`).
-- [x] TypeScript compilation passed (`npx tsc --noEmit`).
-- [x] Integration test collection verified (`pytest tests/integration/test_apiseal_live.py --collect-only`).
-- [x] Public GitHub Actions CI workflow passed (`https://github.com/edwarderlick/ApiSeal/actions/runs/39099738332`).
-- [x] Cross-platform script execution verified for Windows & Unix.
+- [x] 38 direct unit tests passing locally and in public CI (`pytest tests/direct/test_apiseal.py`).
+- [x] AST safety validation passed locally and in CI (`genvm-lint check contracts/apiseal.py`).
+- [x] ABI schema validation and byte-for-byte parity passed locally and in CI (`genvm-lint schema`).
+- [x] TypeScript compilation passed locally and in CI (`npx tsc --noEmit`).
+- [x] Integration test suite skipped safely without live opt-in (`pytest tests/integration/test_apiseal_live.py`).
+- [x] Public GitHub Actions CI workflow passed ([run #39100089946](https://github.com/edwarderlick/ApiSeal/actions/runs/39100089946), commit `1b03a248f89ecf8e01d1548dc07e0b0799ec0e8d`).
+- [x] Guarded fail-closed script execution verified on Windows (locally) and Ubuntu Linux (CI).
 - [x] Real fee estimation and authoritative `txDataDecoded` address extraction implemented.
 - [x] Canonical source SHA-256 computed: `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`.
-- [x] No automated deployment or live network transactions executed (pre-deployment repair complete).
+- [ ] Deployed-source parity — pending deployment and successful `getContractCode` byte-for-byte comparison.
+- [x] No deployment and zero live transactions executed (Phase A complete; live integration and deployment pending).

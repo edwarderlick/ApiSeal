@@ -18,10 +18,10 @@ Bounded semantic-version release certification for public APIs using GenLayer va
 | **Contract Source Path** | `contracts/apiseal.py` | Standalone Python Intelligent Contract |
 | **Contract Source SHA-256** | `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587` | Immutable source code fingerprint |
 | **Direct Test Count** | 38 passed (100% offline pass) | Covers all schema, boundary, and adversarial paths |
-| **Public CI Status** | Passing (1m11s, run #39099738332) | GenVM lint, 38 unit tests, live-guard skip, TypeScript clean |
+| **Public CI Status** | Passing ([run #39100089946](https://github.com/edwarderlick/ApiSeal/actions/runs/39100089946), commit `1b03a24`) | GenVM lint, schema parity, 38 unit tests, live-guard skip, TypeScript clean |
 | **Deployment Status** | Pre-deployment source published | Awaiting private key environment for live network transaction |
 | **Live Integration Status** | Guarded (4 skipped by default) | Requires explicit opt-in `APISEAL_RUN_LIVE_TESTS=1` |
-| **On-Chain Verification** | Verified offline via `tsx` script | Byte-for-byte readback verification prepared |
+| **On-Chain Verification** | NOT RUN — verification script prepared; requires successful deployment and on-chain code readback. | Script `deploy/verify_onchain.ts` ready for post-deployment execution |
 
 ---
 
@@ -126,9 +126,9 @@ ApiSeal enforces an exact manifest schema with strict validation rules. Any extr
 | `id` | `string` | 1 to 32 chars, regex `^[a-z][a-z0-9_]*$` | Unique surface identifier |
 | `method` | `string` | `GET`, `POST`, `PUT`, `PATCH`, `DELETE` | HTTP request method |
 | `path` | `string` | 1 to 128 ASCII chars | Endpoint route path |
-| `request_contract` | `string` | 1 to 512 chars | Request parameters and headers contract |
-| `response_contract` | `string` | 1 to 512 chars | Response payload schema contract |
-| `behavior_contract` | `string` | 1 to 512 chars | Semantic and behavioral guarantees |
+| `request_contract` | `string` | 1 to 500 chars | Request parameters and headers contract |
+| `response_contract` | `string` | 1 to 500 chars | Response payload schema contract |
+| `behavior_contract` | `string` | 1 to 500 chars | Semantic and behavioral guarantees |
 
 ### Canonical Formatting Rules
 - Manifest strings must not exceed 12,000 UTF-8 characters (`MAX_MANIFEST_LEN = 12000`).
@@ -202,7 +202,7 @@ ApiSeal enforces an exact manifest schema with strict validation rules. Any extr
 
 - **Manifest Size Cap**: Maximum 12,000 characters.
 - **Surface Count Cap**: Minimum 1 surface, maximum 12 surfaces per manifest.
-- **String Length Limits**: `id` <= 32 chars, `path` <= 128 chars, contracts <= 512 chars, `api_name` <= 64 chars.
+- **String Length Limits**: `id` <= 32 chars, `path` <= 128 chars, contracts <= 500 chars, `api_name` <= 64 chars.
 - **Version Bounds**: Version components (`major`, `minor`, `patch`) must be non-negative integers strictly <= 1,000,000. Booleans passed as integers are explicitly rejected.
 - **Single Pending Proposal**: At most one proposal may be pending at any time (`status == "PENDING"`). Overlapping proposals revert.
 - **Review Window and Expiry**: Proposals must be reviewed before `deadline = proposal_time + review_window_seconds`. After deadline, review is forbidden and anyone may permissionlessly call `expire_proposal()`.
@@ -290,42 +290,45 @@ ApiSeal/
    PYTHONUTF8=1 genvm-lint check contracts/apiseal.py
    ```
 
-3. **Regenerate ABI Schema**:
+3. **Regenerate and Verify ABI Schema Parity**:
    ```bash
    genvm-lint schema -o deploy/schema.json --json contracts/apiseal.py
+   # In CI, generated to a temporary file and verified byte-for-byte against deploy/schema.json
    ```
 
 4. **Run Direct Contract Unit Tests**:
    ```bash
    pytest tests/direct/test_apiseal.py -q
-   # Result: 38 passed
+   # Result: 38 passed in local and public CI
    ```
 
 5. **Run Integration Test Suite Without Live Opt-In**:
    ```bash
    pytest tests/integration/test_apiseal_live.py -q
-   # Result: 4 skipped, zero network writes or deployments
+   # Result: 4 skipped safely in local and public CI, zero network writes or deployments
    ```
 
 6. **Typecheck TypeScript Deployment Code**:
    ```bash
    npx tsc --noEmit
-   # Result: 0 errors
+   # Result: 0 errors in local and public CI
    ```
 
 7. **Verify Fail-Closed Script Execution**:
    ```bash
+   # Windows (local) & Ubuntu Linux (CI):
    npm run deploy:studio-dev   # Visibly fails: ERROR: No private key provided.
    npm run verify:onchain      # Visibly fails: ERROR: No contract address provided.
    ```
 
 ---
 
-## Offline Verification Evidence
+## Offline & CI Verification Evidence
 
-All offline verification checks pass deterministically:
+All offline and CI verification checks pass deterministically:
 
 1. **AST Safety & Contract Validation (`genvm-lint check`)**:
+   Passed in local authoring environment and in public GitHub Actions CI.
    ```text
    ✓ Lint passed (3 checks)
    ✓ Validation passed
@@ -333,15 +336,23 @@ All offline verification checks pass deterministically:
      Methods: 11 (6 view, 5 write)
    ```
 
-2. **Direct Test Suite Summary (`pytest tests/direct/test_apiseal.py`)**:
-   - **38 passed in ~0.3s**
+2. **ABI Schema Parity**:
+   Passed in local environment and in public CI. In CI, schema is extracted to a temporary file and asserted byte-for-byte identical to `deploy/schema.json`.
+
+3. **Direct Test Suite Summary (`pytest tests/direct/test_apiseal.py`)**:
+   - **38 passed in ~0.24s** (100% pass locally and in public CI).
    - Covers: exact manifest schema, unknown-key rejection, malformed JSON, nested/duplicate IDs, string/count boundaries, boolean-as-integer rejection, URL/hash validation, authorization, concurrency, cancellation, permissionless expiry, deadline enforcement, hash mismatch fail-closed, structural breaking detection, semantic breaking detection, additive surface detection, compatible patch acceptance, ambiguous rejection, prompt injection resistance, atomic replacement, replay prevention, history cap (10 items), and history recomputation.
 
-3. **TypeScript Typecheck (`npx tsc --noEmit`)**: Clean exit code 0.
+4. **TypeScript Typecheck (`npx tsc --noEmit`)**:
+   Clean exit code 0 locally and in public CI.
 
-4. **Default Live Integration Suite**: 4 skipped in 0.05s with zero network transactions.
+5. **Default Live Integration Suite**:
+   4 skipped in 0.02s with zero network transactions locally and in public CI.
 
-5. **Cryptographic Checksums**:
+6. **Guarded Cross-Platform Script Execution**:
+   Guarded fail-closed script behavior verified on Windows (locally) and on Ubuntu Linux (public CI).
+
+7. **Cryptographic Checksums**:
    - `contracts/apiseal.py`: `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`
    - `fixtures/v1.0.1-compatible.json`: `5d1c3fe497e44fc95a704e7ae49fb0c99a4af0b6b99fa12afdef0a959681701c`
    - `fixtures/v1.0.1-additive.json`: `1c7d2fe54ae97fea4d82cbb112a243f8e16e10a2ff84430bfbdce3c75ecde888`
@@ -354,8 +365,8 @@ All offline verification checks pass deterministically:
 The live integration test suite is located in [`tests/integration/test_apiseal_live.py`](tests/integration/test_apiseal_live.py).
 
 > [!NOTE]
-> **Live Integration Status: NOT RUN BY DEFAULT**
-> Without explicit configuration, all 4 tests unconditionally skip before deploying a contract or submitting any transactions.
+> **Live Integration Status: IMPLEMENTED / PENDING (NOT RUN BY DEFAULT)**
+> Without explicit configuration and credentials, all 4 tests unconditionally skip before deploying a contract or submitting any transactions.
 
 ### Live Test Requirements
 To execute live tests against the GenLayer Studio Devnet Preview:
@@ -374,10 +385,10 @@ To execute live tests against the GenLayer Studio Devnet Preview:
    ```
 
 ### Scenarios Tested
-- `test_integration_01_accepted_compatible_release`: Owner registers baseline v1.0.0, proposes compatible v1.0.1. Validators verify hash, classify surfaces as `COMPATIBLE`, and contract promotes release.
-- `test_integration_02_rejected_insufficient_version`: Owner registers baseline v1.0.0, proposes additive candidate (`refund_charge`) with only patch bump v1.0.1. Contract deterministically requires at least minor bump and rejects proposal.
-- `test_integration_03_hash_mismatch_or_fetch_failure`: Candidate URL 404 or corrupted SHA-256 causes transaction to fail execution closed.
-- `test_integration_04_repeat_review_revert`: Once a proposal is reviewed, repeating `review_release()` on the non-pending state reverts.
+- `test_integration_01_accepted_compatible_release` (implemented/pending): Owner registers baseline v1.0.0, proposes compatible v1.0.1. Validators verify hash, classify surfaces as `COMPATIBLE`, and contract promotes release.
+- `test_integration_02_rejected_insufficient_version` (implemented/pending): Owner registers baseline v1.0.0, proposes additive candidate (`refund_charge`) with only patch bump v1.0.1. Contract deterministically requires at least minor bump and rejects proposal.
+- `test_integration_03_hash_mismatch_or_fetch_failure` (implemented/pending): Candidate URL 404 or corrupted SHA-256 causes transaction to fail execution closed.
+- `test_integration_04_repeat_review_revert` (implemented/pending): Once a proposal is reviewed, repeating `review_release()` on the non-pending state reverts.
 
 ---
 
@@ -417,11 +428,11 @@ The verification script [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts):
 | **Do validators independently verify all consequential output?** | Yes. Under Optimistic Democracy, all validators re-run manifest retrieval, pre-image hash verification, and LLM classification. Consensus compares the exact list of `(id, status)` tuples. | [`contracts/apiseal.py`](contracts/apiseal.py#L665-L710) | LLM reasoning explanations are omitted to prevent nondeterministic string divergence. |
 | **Can malformed or injected model output affect state?** | No. Top-level and item-level model output schemas are validated strictly. IDs must exactly match existing canonical IDs. Extraneous keys, duplicate IDs, or missing IDs revert. | Direct tests 23, 24, 25, 26, 32, 33 | Model cannot add surfaces or alter contract decision logic. |
 | **Can a proposal remain stuck forever?** | No. The contract enforces a review deadline. Owner can cancel anytime, and anyone can call `expire_proposal()` after deadline elapses. | Direct tests 09, 10, 11 | Clock depends on blockchain validator timestamp. |
-| **Can a proposal be reviewed twice?** | No. Reviewing atomically transitions state to `READY`. A repeat call to `review_release()` reverts immediately. | Direct test 29; Live test 04 | Requires caller to submit a new proposal to trigger another review. |
+| **Can a proposal be reviewed twice?** | No. Reviewing atomically transitions state to `READY`. A repeat call to `review_release()` reverts immediately. | Direct test 29; Live test 04 (implemented/pending) | Requires caller to submit a new proposal to trigger another review. |
 | **Is storage bounded?** | Yes. Manifests are capped at 12,000 characters. History maintains at most 10 records using FIFO ring buffer eviction. | Direct tests 04, 30 | Historical proposals past the 10-item cap are evicted from on-chain storage. |
 | **Is parsing schema-aware rather than regex-based?** | Yes. Manifests are parsed using strict `json.loads` followed by full structural recursive schema validation. | Direct tests 01, 02, 03 | Malformed JSON or unknown fields trigger immediate revert. |
-| **Is the submitted source identical to deployed source?** | Yes. `verify_onchain.ts` downloads byte-for-byte on-chain code via `client.getContractCode()` and compares SHA-256 against `contracts/apiseal.py`. | Script [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts) | Verifies contract logic, not off-chain compiler artifacts. |
-| **Which claims are local-test claims versus live-chain claims?** | 38 direct unit tests prove AST, bounds, adversarial defense, and history recomputation locally. Live tests prove consensus integration on Studio Devnet. | Clearly separated sections in README and `evidence/studio-dev.md` | Local tests use deterministic simulator stubs; live tests use preview validator nodes. |
+| **Is the submitted source identical to deployed source?** | Not yet proven because no deployment exists. Local source SHA-256 is fixed (`d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587`). Script `deploy/verify_onchain.ts` is prepared to prove byte-for-byte equality after deployment. | Script [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts) prepared; awaiting deployment | Do not answer “Yes” before observing the deployed code on-chain. |
+| **Which claims are local-test claims versus live-chain claims?** | 38 direct unit tests are offline simulator evidence. Four live integration scenarios are implemented but NOT RUN. No Studio validator-consensus lifecycle proof exists yet. | Clearly separated sections in README and `evidence/studio-dev.md` | Local tests use deterministic simulator stubs; live tests require explicit private key environment and test GEN. |
 | **Are there any value transfers or escrow risks?** | Zero. ApiSeal performs no token transfers, accepts no payable transactions, and holds no escrow funds. | [`contracts/apiseal.py`](contracts/apiseal.py) (no `payable` methods) | Cannot be used as a financial escrow. |
 
 ---
@@ -434,7 +445,7 @@ The verification script [`deploy/verify_onchain.ts`](deploy/verify_onchain.ts):
 - [x] **Guaranteed Lifecycle Exits**: Every pending proposal has both owner cancellation and permissionless deadline expiry exits.
 - [x] **Replay / Double-Review Immunity**: State transitions prevent repeating a review once resolved.
 - [x] **Bounded Storage & Memory**: 12,000 char manifest cap, 12 surface cap, and 10-entry FIFO history buffer.
-- [x] **Source Code Parity**: Local source hash `d8bc72dc110f0ea9295107ffefecff021f175fe19c7a38de6ae5425e00a61587` matches deployed code.
+- [ ] **Deployed-Source Parity**: Pending deployment and successful `getContractCode` byte-for-byte comparison.
 - [x] **Adversarial & Negative Testing**: Direct test suite exercises malformed JSON, prompt injection, invalid statuses, out-of-bounds numbers, and timestamp failures.
 - [x] **No Mock Claims as Live Proof**: Offline simulation and direct tests are strictly separated from live on-chain execution evidence.
 

@@ -109,6 +109,12 @@ jobs:
       - name: Lint and validate contract AST
         run: genvm-lint check contracts/apiseal.py
 
+      - name: Verify ABI schema extraction and parity with tracked schema
+        run: |
+          mkdir -p /tmp/schema_check
+          genvm-lint schema -o /tmp/schema_check/schema.json --json contracts/apiseal.py
+          diff -u deploy/schema.json /tmp/schema_check/schema.json
+
       - name: Run direct contract unit tests
         run: pytest tests/direct/test_apiseal.py -q
 
@@ -117,3 +123,8 @@ jobs:
 
       - name: Typecheck TypeScript scripts
         run: npx tsc --noEmit
+
+      - name: Verify guarded deployment and verification scripts fail safely on Linux CI
+        run: |
+          npm run deploy:studio-dev && exit 1 || echo "deployScript failed safely without private key"
+          npm run verify:onchain && exit 1 || echo "verify_onchain failed safely without address"
