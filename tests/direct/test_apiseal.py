@@ -51,11 +51,12 @@ if "_genlayer_wasi" not in sys.modules:
     sys.modules["_genlayer_wasi"] = wasi
 
 # Ensure the extracted GenVM SDK is on sys.path if not in environment
-sdk_cache = Path.home() / ".cache" / "genvm-linter" / "extracted" / "genlayerlabs-genvm-manager-v0.6.0-rc9" / "py-lib-genlayer-std"
-if sdk_cache.exists():
-    for sub in sdk_cache.iterdir():
-        if sub.is_dir() and (sub / "genlayer").exists():
-            sys.path.insert(0, str(sub))
+target_sdk_hash = "z7fv8bqpetj3wnjd8sn5s5xfqve3rz8nmtq4npwf2qdvns57zjgg"
+extracted_base = Path.home() / ".cache" / "genvm-linter" / "extracted"
+if extracted_base.exists():
+    for p in extracted_base.glob(f"*/py-lib-genlayer-std/{target_sdk_hash}"):
+        if (p / "genlayer").exists() and str(p) not in sys.path:
+            sys.path.insert(0, str(p))
             break
 
 # Ensure project root is on sys.path
