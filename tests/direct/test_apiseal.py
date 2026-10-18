@@ -51,13 +51,26 @@ if "_genlayer_wasi" not in sys.modules:
     sys.modules["_genlayer_wasi"] = wasi
 
 # Ensure the extracted GenVM SDK is on sys.path if not in environment
-target_sdk_hash = "z7fv8bqpetj3wnjd8sn5s5xfqve3rz8nmtq4npwf2qdvns57zjgg"
+target_sdk_hashes = [
+    "kzr02ndm9et4qkmbqpq5djjt5sme2yt76n7sz1qbzax0knt6mam0",
+    "z7fv8bqpetj3wnjd8sn5s5xfqve3rz8nmtq4npwf2qdvns57zjgg",
+]
 extracted_base = Path.home() / ".cache" / "genvm-linter" / "extracted"
 if extracted_base.exists():
-    for p in extracted_base.glob(f"*/py-lib-genlayer-std/{target_sdk_hash}"):
-        if (p / "genlayer").exists() and str(p) not in sys.path:
-            sys.path.insert(0, str(p))
+    found = False
+    for h in target_sdk_hashes:
+        for p in extracted_base.glob(f"*/py-lib-genlayer-std/{h}"):
+            if (p / "genlayer").exists() and str(p) not in sys.path:
+                sys.path.insert(0, str(p))
+                found = True
+                break
+        if found:
             break
+    if not found:
+        for p in extracted_base.glob("*/py-lib-genlayer-std/*"):
+            if (p / "genlayer").exists() and str(p) not in sys.path:
+                sys.path.insert(0, str(p))
+                break
 
 # Ensure project root is on sys.path
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -65,7 +78,11 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 import genlayer as gl
-from genlayer import Contract, Address, u256
+Contract = getattr(gl, "Contract", None) or getattr(getattr(gl, "contract", None), "Contract", None)
+if not hasattr(gl, "Contract"):
+    gl.Contract = Contract
+Address = getattr(gl, "Address", None) or getattr(getattr(gl, "types", None), "Address", None)
+u256 = getattr(gl, "u256", None) or getattr(getattr(gl, "types", None), "u256", None)
 
 from contracts.apiseal import (
     ApiSeal,

@@ -103,6 +103,12 @@ jobs:
               (py_shim / '__init__.py').write_text('')
               (py_shim / 'get_schema.py').write_text('from genlayer._internal.get_schema import *\n')
 
+              # Ensure top-level re-exports for contract validation and direct tests
+              init_file = py_lib_dir / 'genlayer' / '__init__.py'
+              init_content = init_file.read_text()
+              if 'from .contract import Contract' not in init_content:
+                  init_file.write_text(init_content + '\nfrom .storage import allow as allow_storage, TreeMap, DynArray\nfrom .contract import Contract\n')
+
               # Duplicate to alternate directory without .tar extension
               if not ext_base_alt.exists():
                   shutil.copytree(ext_base, ext_base_alt)
