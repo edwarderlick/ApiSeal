@@ -120,7 +120,7 @@ jobs:
         run: |
           mkdir -p /tmp/schema_check
           genvm-lint schema -o /tmp/schema_check/schema.json --json contracts/apiseal.py
-          diff -u deploy/schema.json /tmp/schema_check/schema.json
+          diff -u --strip-trailing-cr deploy/schema.json /tmp/schema_check/schema.json
 
       - name: Run direct contract unit tests
         run: pytest tests/direct -q
